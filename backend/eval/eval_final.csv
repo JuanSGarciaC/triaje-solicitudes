@@ -1,0 +1,11 @@
+subject,body,expected_category,expected_priority
+No entra mi usuario al sistema,Escribo mi usuario y me dice 'cuenta deshabilitada'. Ayer funcionaba bien.,acceso_cuentas,media
+Instalación de Python,Para un análisis necesito Python 3 instalado en mi laptop. Sin apuro.,software,baja
+Excel se congela,Cada vez que abro el archivo de presupuesto Excel se queda pegado y pierdo el trabajo. Tengo que entregarlo hoy.,software,media
+Se cayó el wifi del piso 3,"Desde hace una hora no hay wifi en todo el piso 3, somos como 30 personas sin poder trabajar.",red_conectividad,alta
+Cable de red dañado,El cable que va a mi puesto está pelado y a veces se corta la conexión.,red_conectividad,media
+Proyector no prende,"El proyector de la sala B no enciende, tenemos presentación mañana a primera hora.",hardware,media
+Quiero una herramienta de encuestas,Nos gustaría tener un servicio para hacer encuestas internas. No hay urgencia.,nuevo_servicio,baja
+Acceso a carpeta de RRHH,Necesito permisos de lectura a la carpeta de RRHH para el informe trimestral.,acceso_cuentas,baja
+Consulta sobre el uso de celulares,¿Está permitido conectar mi celular personal al wifi de la empresa?,otro,baja
+Laptop robada,Me robaron la laptop de la oficina del auto. Tenía correo y archivos de clientes. Necesito bloquear todo.,hardware,alta

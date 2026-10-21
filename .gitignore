@@ -1,0 +1,10 @@
+.env
+*.env
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+*.db
+node_modules/
+dist/
+backend/eval/report.md
