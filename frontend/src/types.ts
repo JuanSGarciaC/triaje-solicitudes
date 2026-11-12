@@ -49,3 +49,27 @@ export interface ReviewPayload {
   reviewer: string;
   note?: string;
 }
+
+export interface EvalError {
+  subject: string;
+  expected: string;
+  predicted: string;
+  confidence: number;
+}
+
+export interface EvalReport {
+  date: string;
+  classifier: string;
+  threshold: number;
+  dataset: string;
+  n: number;
+  api_failures: number;
+  invalid: number;
+  category_ok: number;
+  priority_ok: number;
+  auto: number;
+  auto_ok: number;
+  confusion: Record<string, Record<string, number>>;
+  category_errors: EvalError[];
+  priority_errors: EvalError[];
+}

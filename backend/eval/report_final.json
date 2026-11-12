@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-21 17:32",
+  "classifier": "gemini:gemini-3.5-flash-lite",
+  "threshold": 0.75,
+  "dataset": "eval_final.csv",
+  "n": 10,
+  "api_failures": 0,
+  "invalid": 0,
+  "category_ok": 9,
+  "priority_ok": 6,
+  "auto": 5,
+  "auto_ok": 4,
+  "confusion": {
+    "acceso_cuentas": {"acceso_cuentas": 2, "hardware": 0, "software": 0, "red_conectividad": 0, "nuevo_servicio": 0, "otro": 0},
+    "hardware": {"acceso_cuentas": 0, "hardware": 2, "software": 0, "red_conectividad": 0, "nuevo_servicio": 0, "otro": 0},
+    "software": {"acceso_cuentas": 0, "hardware": 0, "software": 2, "red_conectividad": 0, "nuevo_servicio": 0, "otro": 0},
+    "red_conectividad": {"acceso_cuentas": 0, "hardware": 0, "software": 0, "red_conectividad": 2, "nuevo_servicio": 0, "otro": 0},
+    "nuevo_servicio": {"acceso_cuentas": 0, "hardware": 0, "software": 0, "red_conectividad": 0, "nuevo_servicio": 1, "otro": 0},
+    "otro": {"acceso_cuentas": 0, "hardware": 0, "software": 0, "red_conectividad": 1, "nuevo_servicio": 0, "otro": 0}
+  },
+  "category_errors": [
+    {"subject": "Consulta sobre el uso de celulares", "expected": "otro", "predicted": "red_conectividad", "confidence": 0.9}
+  ],
+  "priority_errors": [
+    {"subject": "No entra mi usuario al sistema", "expected": "media", "predicted": "alta", "confidence": 0.95},
+    {"subject": "Excel se congela", "expected": "media", "predicted": "alta", "confidence": 0.9},
+    {"subject": "Cable de red dañado", "expected": "media", "predicted": "baja", "confidence": 0.95},
+    {"subject": "Proyector no prende", "expected": "media", "predicted": "alta", "confidence": 0.95}
+  ]
+}

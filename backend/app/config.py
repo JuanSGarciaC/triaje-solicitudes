@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     confidence_threshold: float = 0.75
     always_review_priorities: str = "alta"  # prioridades que SIEMPRE pasan por una persona
     cors_origins: str = "http://localhost:5173"
+    static_dir: str = "../frontend/dist"  # panel compilado; si no existe, la API no lo sirve
 
 
 settings = Settings()

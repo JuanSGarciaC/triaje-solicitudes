@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api, useLoad } from "../api";
 import { ConfidenceMeter, ErrorNote, PriorityBadge } from "../components";
-import { CATEGORY_LABEL, PRIORITY_LABEL, formatDate, label } from "../labels";
+import { CATEGORY_LABEL, PRIORITY_LABEL, clfLabel, formatDate, label, why } from "../labels";
 import type { AppConfig } from "../types";
 
 export default function Review({ config }: { config: AppConfig }) {
@@ -66,7 +66,7 @@ export default function Review({ config }: { config: AppConfig }) {
             ))}
           </ul>
 
-          <section className="panel" aria-labelledby="detalle">
+          <section className="panel glow" aria-labelledby="detalle">
             <h3 id="detalle">{selected.subject}</h3>
             <p className="muted">
               {selected.requester} · {formatDate(selected.created_at)}
@@ -79,7 +79,15 @@ export default function Review({ config }: { config: AppConfig }) {
                 <strong>{label(CATEGORY_LABEL, selected.pred_category)}</strong> <PriorityBadge value={selected.pred_priority} />
               </p>
               <ConfidenceMeter value={selected.pred_confidence} threshold={config.confidence_threshold} />
-              <p className="muted">{selected.pred_reasoning}</p>
+              <p className="muted">
+                {clfLabel(selected.classifier_version)}: {selected.pred_reasoning}
+              </p>
+              <h4>Por qué llegó a revisión</h4>
+              <ul className="reasons">
+                {why(selected, config).map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
             </div>
 
             <form onSubmit={submit} className="form">
