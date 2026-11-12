@@ -27,7 +27,7 @@ La interfaz son tres pantallas planas que no explican la idea del proyecto: el m
 ## Fuera de alcance
 
 - Entrada desde `integrador-webhooks` (`Idempotency-Key`): se define en la fase del integrador.
-- Demo pública: revisar no exige autenticación.
+- Demo pública: revisar no exige autenticación. (Hecha después en la rama `demo-publica`: modo demo sin texto libre, ver README.)
 - SSE o websockets: la clasificación responde en la misma petición.
 - Volver a ejecutar Gemini: `report_final.json` se transcribe de `report_final.md` (2026-10-21).
 
