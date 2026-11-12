@@ -46,3 +46,5 @@ def test_config_endpoint(client):
 def test_panel_routes_fall_back_to_index_but_api_does_not(client):
     assert "<title>panel</title>" in client.get("/revision").text
     assert client.get("/api/no-existe").status_code == 404
+    assert client.get("/api").status_code == 404
+    assert client.head("/").status_code == 200

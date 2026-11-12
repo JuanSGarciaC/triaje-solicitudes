@@ -128,7 +128,7 @@ Los nombres de modelo y las cuotas del plan gratuito cambian con frecuencia; ver
 
 ```powershell
 python eval/run_eval.py --pausa 4
-python eval/run_eval.py --csv eval/eval_final.csv --out eval/report_final.md --pausa 4
+python eval/run_eval.py --csv eval/eval_final.csv --out eval/report_final_nuevo.md --pausa 4
 ```
 
 El reporte incluye exactitud de categoría y prioridad, matriz de confusión y lista de errores, y cuenta aparte las fallas de API y las salidas inválidas del modelo. Se escribe en Markdown y en JSON; los `report_*.json` guardados son los que muestra la pantalla de Evaluación. `report_final.json` es la transcripción de `report_final.md` (corrida de Gemini del 2026-10-21), sin volver a llamar a la API.
@@ -137,7 +137,7 @@ El reporte incluye exactitud de categoría y prioridad, matriz de confusión y l
 
 | Qué | Cómo | Resultado (2026-11-11, local) |
 |---|---|---|
-| Unitarias e integración de la API | `pytest` en `backend/` | 17 pasan |
+| Unitarias e integración de la API | `pytest` en `backend/` | 18 pasan |
 | E2E en navegador contra el contenedor | `uv run --with pytest --with playwright pytest e2e` | 4 pasan |
 | Linter | `ruff check` | sin hallazgos |
 | Compilación del panel | `npm run build` (incluye `tsc`) | sin errores |

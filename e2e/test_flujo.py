@@ -47,14 +47,17 @@ def test_solicitud_clara_se_aprueba_sola(page: Page):
 
 
 def test_umbral_simulado_no_cambia_nada_real(page: Page):
+    aprobadas = page.get_by_role("button", name=re.compile("Aprobada sola")).locator(".node-count")
+    page.goto(BASE)
+    expect(aprobadas).not_to_have_text("0")  # necesita al menos una aprobada (la deja la prueba anterior)
     slider = page.get_by_label("Umbral de confianza")
     slider.focus()
     slider.press("End")  # 100 %: ninguna confianza del clasificador de reglas llega
     expect(page.locator(".flow-caption")).to_contain_text("más pasarían a revisión humana")
-    assert count(page, "Aprobada sola") == 0
+    expect(aprobadas).to_have_text("0")
     page.reload()  # la simulación vive en el navegador: al recargar vuelve la política real
     expect(page.locator(".n-pol .node-count")).to_have_text("75 %")
-    assert count(page, "Aprobada sola") >= 1
+    expect(aprobadas).not_to_have_text("0")
 
 
 def test_urgente_va_a_revision_y_una_persona_la_corrige(page: Page):

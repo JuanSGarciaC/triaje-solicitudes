@@ -31,3 +31,11 @@ def test_eval_endpoint_serves_saved_reports(client):
     assert "mock-keywords-v1" in by_clf
     for r in reports:  # la matriz debe cuadrar con el total de casos
         assert sum(sum(row.values()) for row in r["confusion"].values()) == r["n"]
+
+
+def test_eval_endpoint_skips_broken_reports(client, monkeypatch, tmp_path):
+    (tmp_path / "report_roto.json").write_text("{a medias", encoding="utf-8")
+    (tmp_path / "report_lista.json").write_text("[1]", encoding="utf-8")
+    (tmp_path / "report_ok.json").write_text('{"n": 1}', encoding="utf-8")
+    monkeypatch.setattr("app.main.EVAL_DIR", tmp_path)
+    assert client.get("/api/eval").json() == [{"n": 1}]
