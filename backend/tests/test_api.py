@@ -48,3 +48,13 @@ def test_panel_routes_fall_back_to_index_but_api_does_not(client):
     assert client.get("/api/no-existe").status_code == 404
     assert client.get("/api").status_code == 404
     assert client.head("/").status_code == 200
+
+
+def test_idempotency_key_no_duplica(client):
+    payload = {"subject": "Impresora sin tinta", "body": "La impresora del segundo piso no tiene tinta negra.", "requester": "octocat"}
+    first = client.post("/api/requests", json=payload, headers={"Idempotency-Key": "evento-1"})
+    again = client.post("/api/requests", json=payload, headers={"Idempotency-Key": "evento-1"})
+    other = client.post("/api/requests", json=payload, headers={"Idempotency-Key": "evento-2"})
+    assert (first.status_code, again.status_code, other.status_code) == (201, 200, 201)
+    assert again.json()["id"] == first.json()["id"] != other.json()["id"]
+    assert again.json()["created_at"] == first.json()["created_at"]

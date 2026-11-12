@@ -32,3 +32,12 @@ class Request(Base):
     reviewer: Mapped[str | None] = mapped_column(String(120), default=None)
     review_note: Mapped[str | None] = mapped_column(Text, default=None)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class IdempotencyKey(Base):
+    """Clave que manda quien reintenta (el integrador de webhooks) para no crear la solicitud dos veces.
+    Tabla aparte: `create_all` la crea sin migrar la de solicitudes."""
+    __tablename__ = "idempotency_keys"
+
+    key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    request_id: Mapped[int] = mapped_column()
