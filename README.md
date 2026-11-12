@@ -63,6 +63,7 @@ React + Vite  ──►  FastAPI  ──►  Clasificador (mock | gemini | anthr
 
 - **Proveedores:** `mock` (reglas simples, sin costo), `gemini` (Google AI Studio, vía REST con `httpx`) y `anthropic`. Se elige con `LLM_PROVIDER`.
 - **Robustez:** reintentos con espera ante 429/500/503, parada limpia si se agota la cuota, validación estricta de la salida del modelo y degradación segura a revisión humana.
+- **Entrada idempotente:** `POST /api/requests` acepta la cabecera `Idempotency-Key`. Si quien envía reintenta con la misma clave (por ejemplo el [integrador de webhooks](https://github.com/JuanSGarciaC/integrador-webhooks), que entrega *al menos una vez*), recibe la solicitud original con `200` y no se clasifica de nuevo.
 - **Seguridad:** el texto del usuario se trata como dato (instrucción anti-inyección en el prompt) y las claves viven en `.env`, que no se versiona.
 
 ## Resultados
@@ -155,7 +156,7 @@ El reporte incluye exactitud de categoría y prioridad, matriz de confusión y l
 
 | Qué | Cómo | Resultado (2026-11-11, local) |
 |---|---|---|
-| Unitarias e integración de la API (incluye el modo demo) | `pytest` en `backend/` | 24 pasan |
+| Unitarias e integración de la API (incluye el modo demo) | `pytest` en `backend/` | 25 pasan |
 | E2E en navegador contra el contenedor | `uv run --with pytest --with playwright pytest e2e` | 4 pasan |
 | Linter | `ruff check` | sin hallazgos |
 | Compilación del panel | `npm run build` (incluye `tsc`) | sin errores |
