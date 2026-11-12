@@ -8,3 +8,4 @@ __pycache__/
 node_modules/
 dist/
 backend/eval/report.md
+backend/eval/report.json
