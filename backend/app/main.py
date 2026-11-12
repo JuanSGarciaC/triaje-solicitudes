@@ -4,15 +4,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Request as HttpRequest
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from .classifier import CATEGORIES, PRIORITIES, get_classifier
 from .config import settings
-from .database import Base, engine, get_db
+from .database import Base, SessionLocal, engine, get_db
+from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
 from .models import Request
 from .policy import decide_status
 from .schemas import ConfigOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
@@ -21,7 +23,52 @@ from .schemas import ConfigOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(engine)
+    if settings.demo_mode:
+        with SessionLocal() as db:
+            seed_demo(db)
     yield
+
+
+limiter = RateLimiter(settings.demo_rate_per_minute)
+
+
+def store(db: Session, subject: str, body: str, requester: str) -> Request:
+    classifier = get_classifier()
+    result = classifier.classify(subject, body)
+    item = Request(
+        subject=subject,
+        body=body,
+        requester=requester,
+        status=decide_status(result),
+        pred_category=result.category,
+        pred_priority=result.priority,
+        pred_summary=result.summary,
+        pred_confidence=result.confidence,
+        pred_reasoning=result.reasoning,
+        classifier_version=classifier.version,
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+def seed_demo(db: Session) -> None:
+    """La demo arranca con datos (el disco del plan gratuito se borra al dormir): los casos de
+    desarrollo, con la mitad de la cola ya revisada y una de cada dos corregida."""
+    if db.scalar(select(func.count(Request.id))):
+        return
+    stored = [store(db, e["subject"], e["body"], "Laura Ríos (ejemplo)") for e in SEED]
+    queue = [r for r in stored if r.status == "needs_review"]
+    for i, r in enumerate(queue[: len(queue) // 2]):
+        r.final_category, r.final_priority = r.pred_category, "media" if i % 2 else r.pred_priority
+        r.reviewer, r.reviewed_at, r.status = "Camila Torres (ejemplo)", datetime.now(timezone.utc), "reviewed"
+    db.commit()
+
+
+def demo_guard(request: HttpRequest) -> None:
+    if settings.demo_mode and not limiter.allow(client_ip(request, settings.client_ip_header)):
+        raise HTTPException(status_code=429, detail="Demasiadas acciones seguidas en la demo. Espera un minuto.")
 
 
 app = FastAPI(title="Triaje de solicitudes", version="1.0.0", lifespan=lifespan)
@@ -45,28 +92,24 @@ def get_config():
         categories=list(CATEGORIES),
         priorities=list(PRIORITIES),
         always_review_priorities=[p.strip() for p in settings.always_review_priorities.split(",") if p.strip()],
+        demo=settings.demo_mode,
+        examples=EXAMPLES if settings.demo_mode else [],
     )
 
 
-@app.post("/api/requests", response_model=RequestOut, status_code=201)
+@app.post("/api/requests", response_model=RequestOut, status_code=201, dependencies=[Depends(demo_guard)])
 def create_request(payload: RequestCreate, db: Session = Depends(get_db)):
-    classifier = get_classifier()
-    result = classifier.classify(payload.subject, payload.body)
-    item = Request(
-        subject=payload.subject,
-        body=payload.body,
-        requester=payload.requester,
-        status=decide_status(result),
-        pred_category=result.category,
-        pred_priority=result.priority,
-        pred_summary=result.summary,
-        pred_confidence=result.confidence,
-        pred_reasoning=result.reasoning,
-        classifier_version=classifier.version,
-    )
-    db.add(item)
-    db.commit()
-    db.refresh(item)
+    if not settings.demo_mode:
+        return store(db, payload.subject, payload.body, payload.requester)
+    if (payload.subject, payload.body) not in ALLOWED:
+        raise HTTPException(status_code=403, detail="En la demo pública solo se envían las solicitudes de ejemplo.")
+    item = store(db, payload.subject, payload.body, VISITOR)
+    # Tope de filas: se borran las más antiguas. shortcut: sin bloqueo, dos envíos a la vez pueden
+    # pasarse del tope por una fila hasta el siguiente envío; poner un candado si eso importa.
+    excess = (db.scalar(select(func.count(Request.id))) or 0) - settings.demo_max_requests
+    if excess > 0:
+        db.execute(delete(Request).where(Request.id.in_(select(Request.id).order_by(Request.id).limit(excess))))
+        db.commit()
     return item
 
 
@@ -91,7 +134,7 @@ def get_request(request_id: int, db: Session = Depends(get_db)):
     return item
 
 
-@app.post("/api/requests/{request_id}/review", response_model=RequestOut)
+@app.post("/api/requests/{request_id}/review", response_model=RequestOut, dependencies=[Depends(demo_guard)])
 def review_request(request_id: int, payload: ReviewIn, db: Session = Depends(get_db)):
     item = db.get(Request, request_id)
     if item is None:
@@ -100,8 +143,9 @@ def review_request(request_id: int, payload: ReviewIn, db: Session = Depends(get
         raise HTTPException(status_code=409, detail="Esta solicitud no está pendiente de revisión.")
     item.final_category = payload.category
     item.final_priority = payload.priority
-    item.reviewer = payload.reviewer
-    item.review_note = payload.note
+    # En la demo no se guarda texto libre de visitantes.
+    item.reviewer = VISITOR if settings.demo_mode else payload.reviewer
+    item.review_note = None if settings.demo_mode else payload.note
     item.reviewed_at = datetime.now(timezone.utc)
     item.status = "reviewed"
     db.commit()
