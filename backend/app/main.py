@@ -1,8 +1,12 @@
+import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -124,3 +128,32 @@ def metrics(db: Session = Depends(get_db)):
         reviewed_count=len(reviewed),
         human_correction_rate=round(corrected / len(reviewed), 3) if reviewed else None,
     )
+
+
+EVAL_DIR = Path(__file__).resolve().parents[1] / "eval"
+
+
+@app.get("/api/eval")
+def eval_reports() -> list[dict]:
+    """Reportes guardados por eval/run_eval.py (uno por clasificador evaluado)."""
+    reports = []
+    for p in sorted(EVAL_DIR.glob("report_*.json")):
+        try:  # un reporte a medio escribir o mal editado no debe tumbar los demás
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict):
+            reports.append(data)
+    return reports
+
+
+# Panel compilado (solo si existe, p. ej. en el contenedor). En desarrollo lo sirve Vite.
+STATIC = Path(settings.static_dir)
+if (STATIC / "index.html").is_file():
+    app.mount("/assets", StaticFiles(directory=STATIC / "assets"), name="assets")
+
+    @app.api_route("/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
+    def panel(path: str):
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="No existe.")
+        return FileResponse(STATIC / "index.html")

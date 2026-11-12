@@ -1,0 +1,12 @@
+.git
+.github
+docs
+graphify-out
+e2e
+scripts
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/*.db
+**/.env

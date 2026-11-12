@@ -1,0 +1,121 @@
+{
+  "date": "2026-11-11 10:25",
+  "classifier": "mock-keywords-v1",
+  "threshold": 0.75,
+  "dataset": "eval_final.csv",
+  "n": 10,
+  "api_failures": 0,
+  "invalid": 0,
+  "category_ok": 6,
+  "priority_ok": 5,
+  "auto": 8,
+  "auto_ok": 6,
+  "confusion": {
+    "acceso_cuentas": {
+      "acceso_cuentas": 2,
+      "hardware": 0,
+      "software": 0,
+      "red_conectividad": 0,
+      "nuevo_servicio": 0,
+      "otro": 0
+    },
+    "hardware": {
+      "acceso_cuentas": 0,
+      "hardware": 1,
+      "software": 0,
+      "red_conectividad": 0,
+      "nuevo_servicio": 0,
+      "otro": 1
+    },
+    "software": {
+      "acceso_cuentas": 0,
+      "hardware": 1,
+      "software": 1,
+      "red_conectividad": 0,
+      "nuevo_servicio": 0,
+      "otro": 0
+    },
+    "red_conectividad": {
+      "acceso_cuentas": 0,
+      "hardware": 0,
+      "software": 0,
+      "red_conectividad": 2,
+      "nuevo_servicio": 0,
+      "otro": 0
+    },
+    "nuevo_servicio": {
+      "acceso_cuentas": 0,
+      "hardware": 0,
+      "software": 0,
+      "red_conectividad": 0,
+      "nuevo_servicio": 0,
+      "otro": 1
+    },
+    "otro": {
+      "acceso_cuentas": 0,
+      "hardware": 0,
+      "software": 0,
+      "red_conectividad": 1,
+      "nuevo_servicio": 0,
+      "otro": 0
+    }
+  },
+  "category_errors": [
+    {
+      "subject": "Instalación de Python",
+      "expected": "software",
+      "predicted": "hardware",
+      "confidence": 0.8
+    },
+    {
+      "subject": "Proyector no prende",
+      "expected": "hardware",
+      "predicted": "otro",
+      "confidence": 0.4
+    },
+    {
+      "subject": "Quiero una herramienta de encuestas",
+      "expected": "nuevo_servicio",
+      "predicted": "otro",
+      "confidence": 0.4
+    },
+    {
+      "subject": "Consulta sobre el uso de celulares",
+      "expected": "otro",
+      "predicted": "red_conectividad",
+      "confidence": 0.8
+    }
+  ],
+  "priority_errors": [
+    {
+      "subject": "Instalación de Python",
+      "expected": "baja",
+      "predicted": "media",
+      "confidence": 0.8
+    },
+    {
+      "subject": "Se cayó el wifi del piso 3",
+      "expected": "alta",
+      "predicted": "media",
+      "confidence": 0.8
+    },
+    {
+      "subject": "Quiero una herramienta de encuestas",
+      "expected": "baja",
+      "predicted": "media",
+      "confidence": 0.4
+    },
+    {
+      "subject": "Acceso a carpeta de RRHH",
+      "expected": "baja",
+      "predicted": "media",
+      "confidence": 0.8
+    },
+    {
+      "subject": "Laptop robada",
+      "expected": "alta",
+      "predicted": "media",
+      "confidence": 0.8
+    }
+  ]
+}
