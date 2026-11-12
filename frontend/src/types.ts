@@ -25,6 +25,8 @@ export interface AppConfig {
   categories: string[];
   priorities: string[];
   always_review_priorities: string[];
+  demo: boolean;
+  examples: { subject: string; body: string }[];
 }
 
 export interface Metrics {

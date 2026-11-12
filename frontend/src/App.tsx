@@ -35,6 +35,7 @@ export default function App() {
           <NavLink to="/metricas">Métricas</NavLink>
           <NavLink to="/evaluacion">Evaluación</NavLink>
         </nav>
+        {config.data?.demo && <span className="chip demo">Demo pública</span>}
         {config.data && <span className="chip">Umbral {pct(config.data.confidence_threshold)}</span>}
       </header>
       <main className="main">

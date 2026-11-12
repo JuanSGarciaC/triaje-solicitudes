@@ -137,6 +137,7 @@ button.link { background: none; border: 0; padding: 0; color: var(--cyan); font-
 .chips { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 .chip { font-size: 0.8rem; padding: 0.25rem 0.7rem; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); white-space: nowrap; }
 button.chip:hover { color: var(--ink); }
+.chip.demo { color: var(--review); border-color: var(--review); }
 .chip[aria-pressed="true"] { color: var(--ink); border-color: var(--cyan); background: rgba(86, 212, 255, 0.1); }
 
 /* ---------- Listas ---------- */

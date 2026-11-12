@@ -1,0 +1,16 @@
+# Blueprint de Render (plan gratuito): un servicio web con la imagen del Dockerfile.
+# Sin secretos: la demo usa el clasificador de reglas y no acepta texto libre de visitantes.
+services:
+  - type: web
+    name: triaje-solicitudes-demo
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: DEMO_MODE
+        value: "true"
+      - key: LLM_PROVIDER
+        value: mock
+      - key: CLIENT_IP_HEADER
+        value: True-Client-IP

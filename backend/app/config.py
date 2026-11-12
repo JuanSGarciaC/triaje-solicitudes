@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     confidence_threshold: float = 0.75
     always_review_priorities: str = "alta"  # prioridades que SIEMPRE pasan por una persona
     cors_origins: str = "http://localhost:5173"
+    # Demo pública: sin texto libre de visitantes, límite por IP y tope de filas.
+    demo_mode: bool = False
+    demo_rate_per_minute: int = 10
+    demo_max_requests: int = 300
+    client_ip_header: str = ""  # en Render: True-Client-IP
     static_dir: str = "../frontend/dist"  # panel compilado; si no existe, la API no lo sirve
 
 
