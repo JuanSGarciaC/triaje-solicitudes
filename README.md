@@ -11,6 +11,24 @@ Aplicación que recibe solicitudes de soporte de TI, las **clasifica con un LLM*
 
 *Grabado contra el contenedor local el 2026-11-11 con el clasificador de reglas y datos de ejemplo. El recorrido se dibuja en el navegador con el resultado que ya devolvió la API.*
 
+## Demo en vivo
+
+**[triaje-solicitudes-demo.onrender.com](https://triaje-solicitudes-demo.onrender.com)** · API interactiva en [`/docs`](https://triaje-solicitudes-demo.onrender.com/docs)
+
+Qué probar:
+1. **Bandeja**: elige una solicitud de ejemplo, envíala y mira qué rama toma en el lienzo y por qué.
+2. **Umbral**: mueve el control del nodo «Política» para ver cuántas solicitudes cambiarían de rama.
+3. **Por revisar**: confirma o corrige una clasificación; después ábrela desde «Decisión humana» para ver la predicción frente a tu decisión.
+4. **Evaluación**: reglas frente a Gemini sobre los mismos 10 casos.
+
+Límites de la demo:
+- Usa el clasificador de reglas, sin LLM ni claves.
+- No acepta texto libre: solo se envían los 42 ejemplos del conjunto de evaluación, y las revisiones se guardan como «Visitante», sin nota. Así ningún visitante ve texto escrito por otro. La API lo exige, no solo el panel.
+- Cada IP puede hacer 10 envíos o revisiones por minuto y se guardan como máximo 300 solicitudes (se borran las más antiguas).
+- Hosting gratuito: el servicio se duerme tras 15 minutos sin visitas, el primer acceso tarda cerca de un minuto y los datos vuelven a los de ejemplo.
+
+Se despliega con el blueprint [`render.yaml`](render.yaml) (`DEMO_MODE=true`).
+
 ## Qué resuelve
 
 Un LLM puede equivocarse con total seguridad. Este proyecto no lo deja decidir solo: una solicitud se aprueba automáticamente **solo si** la confianza supera el umbral (0.75 por defecto) **y** su prioridad no es alta. Todo lo demás va a la cola de revisión, donde una persona confirma o corrige. Si el modelo falla o responde algo inválido, el caso también va a revisión (confianza 0).
@@ -137,7 +155,7 @@ El reporte incluye exactitud de categoría y prioridad, matriz de confusión y l
 
 | Qué | Cómo | Resultado (2026-11-11, local) |
 |---|---|---|
-| Unitarias e integración de la API | `pytest` en `backend/` | 18 pasan |
+| Unitarias e integración de la API (incluye el modo demo) | `pytest` en `backend/` | 24 pasan |
 | E2E en navegador contra el contenedor | `uv run --with pytest --with playwright pytest e2e` | 4 pasan |
 | Linter | `ruff check` | sin hallazgos |
 | Compilación del panel | `npm run build` (incluye `tsc`) | sin errores |

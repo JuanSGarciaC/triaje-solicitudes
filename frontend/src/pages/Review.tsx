@@ -34,7 +34,7 @@ export default function Review({ config }: { config: AppConfig }) {
     setBusy(true);
     setError(null);
     try {
-      await api.review(selected.id, { category, priority, reviewer, note: note || undefined });
+      await api.review(selected.id, { category, priority, reviewer: config.demo ? "Visitante" : reviewer, note: note || undefined });
       setSelectedId(null);
       queue.reload();
     } catch (err) {
@@ -113,14 +113,20 @@ export default function Review({ config }: { config: AppConfig }) {
                   </select>
                 </label>
               </div>
-              <label>
-                Tu nombre
-                <input value={reviewer} onChange={(e) => setReviewer(e.target.value)} required minLength={2} />
-              </label>
-              <label>
-                Nota (opcional)
-                <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
-              </label>
+              {config.demo ? (
+                <p className="muted">Demo pública: la revisión se guarda como «Visitante», sin nota.</p>
+              ) : (
+                <>
+                  <label>
+                    Tu nombre
+                    <input value={reviewer} onChange={(e) => setReviewer(e.target.value)} required minLength={2} />
+                  </label>
+                  <label>
+                    Nota (opcional)
+                    <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
+                  </label>
+                </>
+              )}
               <ErrorNote message={error} />
               <button className="primary" disabled={busy}>
                 {changed ? "Guardar corrección" : "Confirmar clasificación"}

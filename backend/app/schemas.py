@@ -45,6 +45,8 @@ class ConfigOut(BaseModel):
     categories: list[str]
     priorities: list[str]
     always_review_priorities: list[str]
+    demo: bool
+    examples: list[dict[str, str]]
 
 
 class MetricsOut(BaseModel):

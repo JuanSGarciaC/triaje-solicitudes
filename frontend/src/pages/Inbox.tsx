@@ -15,14 +15,18 @@ export default function Inbox({ config }: { config: AppConfig }) {
   const [last, setLast] = useState<RequestItem | null>(null);
   const [filter, setFilter] = useState<Status | null>(null);
   const [open, setOpen] = useState<RequestItem | null>(null);
+  // Demo pública: se elige un ejemplo en vez de escribir (el servidor rechaza texto libre).
+  const [ex, setEx] = useState(0);
+  const data = config.demo ? { ...config.examples[ex], requester: "Visitante" } : form;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      setLast(await api.createRequest(form)); // la lista se recarga cuando el punto llega a su rama
+      setLast(await api.createRequest(data)); // la lista se recarga cuando el punto llega a su rama
       setForm({ subject: "", requester: form.requester, body: "" });
+      setEx((ex + 1) % Math.max(1, config.examples.length));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -46,18 +50,37 @@ export default function Inbox({ config }: { config: AppConfig }) {
         <section className="panel glow" aria-labelledby="nueva">
           <h3 id="nueva">Nueva solicitud</h3>
           <form onSubmit={submit} className="form">
-            <label>
-              Tu nombre
-              <input value={form.requester} onChange={(e) => setForm({ ...form, requester: e.target.value })} required minLength={2} />
-            </label>
-            <label>
-              Asunto
-              <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required minLength={3} maxLength={200} />
-            </label>
-            <label>
-              ¿Qué está pasando?
-              <textarea rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} required minLength={10} maxLength={4000} />
-            </label>
+            {config.demo ? (
+              <>
+                <label>
+                  Solicitud de ejemplo
+                  <select value={ex} onChange={(e) => setEx(Number(e.target.value))}>
+                    {config.examples.map((e, i) => (
+                      <option key={i} value={i}>
+                        {e.subject}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="body-text">{data.body}</p>
+                <p className="muted">Demo pública: se envían ejemplos ya escritos, no texto libre.</p>
+              </>
+            ) : (
+              <>
+                <label>
+                  Tu nombre
+                  <input value={form.requester} onChange={(e) => setForm({ ...form, requester: e.target.value })} required minLength={2} />
+                </label>
+                <label>
+                  Asunto
+                  <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required minLength={3} maxLength={200} />
+                </label>
+                <label>
+                  ¿Qué está pasando?
+                  <textarea rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} required minLength={10} maxLength={4000} />
+                </label>
+              </>
+            )}
             <ErrorNote message={error} />
             <button className="primary" disabled={busy}>
               {busy ? "Clasificando…" : "Enviar solicitud"}
