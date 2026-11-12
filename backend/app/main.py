@@ -3,19 +3,20 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response
 from fastapi import Request as HttpRequest
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .classifier import CATEGORIES, PRIORITIES, get_classifier
 from .config import settings
 from .database import Base, SessionLocal, engine, get_db
 from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
-from .models import Request
+from .models import IdempotencyKey, Request
 from .policy import decide_status
 from .schemas import ConfigOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
@@ -32,7 +33,7 @@ async def lifespan(_: FastAPI):
 limiter = RateLimiter(settings.demo_rate_per_minute)
 
 
-def store(db: Session, subject: str, body: str, requester: str) -> Request:
+def store(db: Session, subject: str, body: str, requester: str, key: str | None = None) -> Request:
     classifier = get_classifier()
     result = classifier.classify(subject, body)
     item = Request(
@@ -48,6 +49,9 @@ def store(db: Session, subject: str, body: str, requester: str) -> Request:
         classifier_version=classifier.version,
     )
     db.add(item)
+    if key:  # misma transacción: o quedan la solicitud y su clave, o ninguna
+        db.flush()
+        db.add(IdempotencyKey(key=key, request_id=item.id))
     db.commit()
     db.refresh(item)
     return item
@@ -98,9 +102,25 @@ def get_config():
 
 
 @app.post("/api/requests", response_model=RequestOut, status_code=201, dependencies=[Depends(demo_guard)])
-def create_request(payload: RequestCreate, db: Session = Depends(get_db)):
+def create_request(
+    payload: RequestCreate,
+    response: Response,
+    idempotency_key: str | None = Header(default=None, max_length=200),
+    db: Session = Depends(get_db),
+):
     if not settings.demo_mode:
-        return store(db, payload.subject, payload.body, payload.requester)
+        # Un reintento con la misma clave devuelve la solicitud original (200) y no vuelve a clasificar.
+        def original():
+            known = db.get(IdempotencyKey, idempotency_key) if idempotency_key else None
+            if known:
+                response.status_code = 200
+            return known and db.get(Request, known.request_id)
+
+        try:
+            return original() or store(db, payload.subject, payload.body, payload.requester, idempotency_key)
+        except IntegrityError:  # dos envíos simultáneos con la misma clave: gana el primero
+            db.rollback()
+            return original()
     if (payload.subject, payload.body) not in ALLOWED:
         raise HTTPException(status_code=403, detail="En la demo pública solo se envían las solicitudes de ejemplo.")
     item = store(db, payload.subject, payload.body, VISITOR)
