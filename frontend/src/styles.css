@@ -164,7 +164,8 @@ button.chip:hover { color: var(--ink); }
 .meter-value { font-weight: 600; min-width: 4ch; text-align: right; }
 
 /* ---------- Detalle ---------- */
-.drawer { margin: 0 0 0 auto; height: 100dvh; max-height: none; width: min(520px, 100vw); padding: 1.5rem; overflow-y: auto; color: var(--ink); border: 0; border-left: 1px solid var(--line); background: #0b1020; }
+.drawer { margin: 0 0 0 auto; height: 100dvh; max-height: none; width: min(520px, 100vw); padding: 0; overflow-y: auto; color: var(--ink); border: 0; border-left: 1px solid var(--line); background: #0b1020; }
+.drawer article { padding: 1.5rem; min-height: 100%; }
 .drawer::backdrop { background: rgba(3, 5, 12, 0.6); backdrop-filter: blur(3px); }
 .drawer[open] { animation: slide 0.25s ease-out; }
 @keyframes slide { from { transform: translateX(40px); opacity: 0; } }

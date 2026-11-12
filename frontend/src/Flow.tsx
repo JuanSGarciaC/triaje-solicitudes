@@ -48,7 +48,7 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
     const t0 = performance.now();
     let raf = 0;
     const tick = (now: number) => {
-      const t = (now - t0) / 900;
+      const t = Math.max(0, now - t0) / 900; // la marca del primer frame puede ser anterior a t0
       const i = Math.floor(t);
       if (i >= route.length) {
         setStep(6);

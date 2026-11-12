@@ -136,7 +136,15 @@ EVAL_DIR = Path(__file__).resolve().parents[1] / "eval"
 @app.get("/api/eval")
 def eval_reports() -> list[dict]:
     """Reportes guardados por eval/run_eval.py (uno por clasificador evaluado)."""
-    return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(EVAL_DIR.glob("report_*.json"))]
+    reports = []
+    for p in sorted(EVAL_DIR.glob("report_*.json")):
+        try:  # un reporte a medio escribir o mal editado no debe tumbar los demás
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict):
+            reports.append(data)
+    return reports
 
 
 # Panel compilado (solo si existe, p. ej. en el contenedor). En desarrollo lo sirve Vite.
@@ -144,8 +152,8 @@ STATIC = Path(settings.static_dir)
 if (STATIC / "index.html").is_file():
     app.mount("/assets", StaticFiles(directory=STATIC / "assets"), name="assets")
 
-    @app.get("/{path:path}", include_in_schema=False)
+    @app.api_route("/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
     def panel(path: str):
-        if path.startswith("api/"):
+        if path == "api" or path.startswith("api/"):
             raise HTTPException(status_code=404, detail="No existe.")
         return FileResponse(STATIC / "index.html")

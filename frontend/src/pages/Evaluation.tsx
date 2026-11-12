@@ -36,6 +36,7 @@ function Matrix({ report }: { report: EvalReport }) {
                 key={exp + pred}
                 className={`cell ${n === 0 ? "" : exp === pred ? "hit" : "miss"}`}
                 style={{ "--v": n / max } as React.CSSProperties}
+                role="img"
                 aria-label={text}
                 onPointerEnter={() => setCell(text)}
               >
