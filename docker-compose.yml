@@ -1,0 +1,12 @@
+# Levanta la aplicación completa en http://localhost:8080 con el clasificador de reglas (sin costo).
+# Para usar Gemini o Anthropic, define LLM_PROVIDER y la clave en backend/.env (ver .env.example).
+services:
+  app:
+    build: .
+    ports: ["8080:8000"]
+    env_file:
+      - path: backend/.env
+        required: false
+    volumes: ["datos:/data"]
+volumes:
+  datos:
