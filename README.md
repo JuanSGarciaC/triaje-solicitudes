@@ -176,3 +176,7 @@ docs/      img/ (capturas)  superpowers/specs/ (diseño del rediseño)
 ## Cómo se construyó
 
 Con asistentes de IA (Claude); el autor revisó el código, lo ejecutó, definió los casos de evaluación y midió los resultados.
+
+## Licencia
+
+Todos los derechos reservados. El código se publica para consulta como parte de mi portafolio: puedes leerlo, pero no usarlo, copiarlo, modificarlo ni distribuirlo sin mi autorización por escrito. Ver [LICENSE](LICENSE).
