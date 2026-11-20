@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cómo funciona · Triaje de solicitudes con IA</title>
+    <meta name="description" content="Un LLM clasifica solicitudes de soporte de TI y una persona decide cuando hace falta." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/como-funciona/landing.css" />
+    <script>
+      // Con JS se ocultan los elementos que luego aparecen. Si landing.js no llega a cargar, se vuelven a mostrar.
+      document.documentElement.classList.add("js");
+      setTimeout(function () { if (!window.landingReady) document.documentElement.classList.remove("js"); }, 2500);
+    </script>
+    <script src="/como-funciona/landing.js" defer></script>
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/como-funciona">Triaje</a>
+      <nav aria-label="Principal">
+        <a href="/">Abrir el panel</a>
+        <a href="https://github.com/JuanSGarciaC/triaje-solicitudes">Código</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Solicitudes de soporte de TI</p>
+        <h1 class="split">Un LLM clasifica. Una persona decide cuando hace falta.</h1>
+        <p class="lead">
+          Cada solicitud recibe categoría, prioridad y confianza. Solo se aprueba sola si la confianza supera
+          el umbral <strong>y</strong> la prioridad no es alta. Todo lo demás pasa por una persona.
+        </p>
+        <p class="actions">
+          <a class="btn primary" href="/">Probar la demo</a>
+          <a class="btn" href="#decision">Ver cómo decide</a>
+        </p>
+      </section>
+
+      <section id="decision" class="story" aria-labelledby="decision-title">
+        <h2 id="decision-title" class="reveal">Una solicitud, de principio a fin</h2>
+        <p class="muted reveal">Caso real de la prueba final, clasificado por Gemini el 2026-10-21.</p>
+
+        <div class="story-grid">
+          <div class="steps">
+            <article class="step" data-step="1">
+              <p class="step-n">1 · Llega</p>
+              <h3>Texto libre, sin estructura</h3>
+              <p>
+                Alguien escribe como escribe: «se queda pegado», «tengo que entregarlo hoy». Nada dice a qué equipo
+                le toca ni cuánto urge.
+              </p>
+            </article>
+            <article class="step" data-step="2">
+              <p class="step-n">2 · Se clasifica</p>
+              <h3>El modelo propone, no decide</h3>
+              <p>
+                El LLM devuelve categoría, prioridad y una confianza entre 0 y 1. La salida se valida: si falta un
+                campo o el valor no existe, la solicitud va a revisión con confianza 0.
+              </p>
+              <p class="hint">Arrastra el divisor de la tarjeta para comparar la solicitud cruda con la clasificada.</p>
+            </article>
+            <article class="step" data-step="3">
+              <p class="step-n">3 · La política</p>
+              <h3>Dos condiciones, las dos obligatorias</h3>
+              <p>
+                La confianza (0,90) supera el umbral de 0,75, pero la prioridad es alta, y una prioridad alta siempre
+                pasa por una persona. El modelo estaba seguro; la regla no se fía de eso.
+              </p>
+            </article>
+            <article class="step" data-step="4">
+              <p class="step-n">4 · Decide una persona</p>
+              <h3>La corrección queda junto a la predicción</h3>
+              <p>
+                Quien revisa confirma la categoría y baja la prioridad a media: es un archivo que falla, no un servicio
+                caído. Se guardan las dos cosas, lo que dijo el modelo y lo que decidió la persona.
+              </p>
+              <p class="muted small">La corrección mostrada es la etiqueta esperada del conjunto de evaluación.</p>
+            </article>
+          </div>
+
+          <aside class="stage" aria-label="Tarjeta de la solicitud">
+            <div class="ticket">
+              <p class="ticket-meta">Solicitud n.º 3 de 10</p>
+              <div class="compare">
+                <div class="layer raw">
+                  <p class="layer-tag">Cruda</p>
+                  <p class="subject">Excel se congela</p>
+                  <p class="body">
+                    Cada vez que abro el archivo de presupuesto Excel se queda pegado y pierdo el trabajo. Tengo que
+                    entregarlo hoy.
+                  </p>
+                  <dl class="fields empty">
+                    <div><dt>Categoría</dt><dd>—</dd></div>
+                    <div><dt>Prioridad</dt><dd>—</dd></div>
+                    <div><dt>Confianza</dt><dd>—</dd></div>
+                  </dl>
+                </div>
+                <div class="layer clf">
+                  <p class="layer-tag">Clasificada</p>
+                  <p class="subject">Excel se congela</p>
+                  <p class="body dup" aria-hidden="true">
+                    Cada vez que abro el archivo de presupuesto Excel se queda pegado y pierdo el trabajo. Tengo que
+                    entregarlo hoy.
+                  </p>
+                  <dl class="fields">
+                    <div><dt>Categoría</dt><dd>Software</dd></div>
+                    <div><dt>Prioridad</dt><dd><span class="pill alta">Alta</span></dd></div>
+                    <div><dt>Confianza</dt><dd>0,90</dd></div>
+                  </dl>
+                </div>
+                <span class="divider" aria-hidden="true"></span>
+                <input class="slider" type="range" min="0" max="100" value="50" hidden
+                  aria-label="Comparar la solicitud cruda con la clasificada" />
+              </div>
+
+              <ul class="checks" data-from="3">
+                <li class="ok"><span aria-hidden="true">✓</span> Confianza 0,90 ≥ umbral 0,75</li>
+                <li class="no"><span aria-hidden="true">✗</span> Prioridad alta: siempre pasa por una persona</li>
+              </ul>
+              <p class="verdict" data-from="3">Resultado: <strong>revisión humana</strong></p>
+
+              <div class="human" data-from="4">
+                <p>Prioridad: <s>Alta</s> → <span class="pill media">Media</span></p>
+                <p class="muted small">Categoría confirmada · revisada por una persona</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel-tour" aria-labelledby="panel-title">
+        <h2 id="panel-title" class="reveal">El panel</h2>
+        <p class="muted reveal">Hecho con SVG y CSS a mano, sin librerías de interfaz ni de gráficos.</p>
+        <div class="cards">
+          <figure class="card reveal">
+            <img src="/como-funciona/img/01-bandeja.png" alt="Bandeja con el lienzo de decisión y la lista de solicitudes" loading="lazy" width="1360" height="900" />
+            <figcaption><strong>Bandeja.</strong> El lienzo muestra por qué rama pasó cada solicitud, con los conteos reales. Un control simula otro umbral sin guardar nada.</figcaption>
+          </figure>
+          <figure class="card reveal">
+            <img src="/como-funciona/img/03-detalle.png" alt="Detalle de una solicitud con la predicción frente a la decisión humana" loading="lazy" width="1360" height="900" />
+            <figcaption><strong>Detalle.</strong> La predicción del modelo frente a la decisión de la persona, con el razonamiento y la versión del clasificador.</figcaption>
+          </figure>
+          <figure class="card reveal">
+            <img src="/como-funciona/img/06-evaluacion.png" alt="Pantalla de evaluación con la matriz de confusión" loading="lazy" width="1360" height="1548" />
+            <figcaption><strong>Evaluación.</strong> Reglas frente a Gemini sobre los mismos casos, con la matriz de confusión y cada error.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="results" aria-labelledby="results-title">
+        <h2 id="results-title" class="reveal">Resultados en la prueba final</h2>
+        <p class="muted reveal">10 casos etiquetados, una sola corrida sin ajustes posteriores. Gemini, umbral 0,75.</p>
+        <dl class="stats">
+          <div class="stat reveal"><dt>Categoría correcta</dt><dd><span class="count" data-to="90" data-suffix="%">90%</span></dd></div>
+          <div class="stat reveal"><dt>Prioridad correcta</dt><dd><span class="count" data-to="60" data-suffix="%">60%</span></dd></div>
+          <div class="stat reveal"><dt>Aprobadas solas</dt><dd><span class="count" data-to="5" data-suffix="/10">5/10</span></dd></div>
+          <div class="stat reveal"><dt>Bien clasificadas entre las aprobadas</dt><dd><span class="count" data-to="4" data-suffix="/5">4/5</span></dd></div>
+        </dl>
+        <div class="caveat reveal">
+          <h3>Por qué sigue habiendo una persona</h3>
+          <p>
+            «¿Está permitido conectar mi celular personal al wifi de la empresa?» es una consulta, no una falla de red.
+            El modelo la marcó como red con 0,90 de confianza y se aprobó sola. La confianza que reporta el modelo está
+            poco calibrada: dice 0,90 también cuando se equivoca. Con muestras tan pequeñas, cada caso pesa 10 puntos.
+          </p>
+        </div>
+      </section>
+
+      <section class="end">
+        <h2 class="reveal">Pruébalo</h2>
+        <p class="reveal">
+          La demo usa el clasificador de reglas, sin LLM ni claves, y solo acepta los ejemplos del conjunto de evaluación.
+          El primer acceso puede tardar cerca de un minuto: el servidor gratuito se duerme.
+        </p>
+        <p class="actions reveal">
+          <a class="btn primary" href="/">Abrir el panel</a>
+          <a class="btn" href="https://github.com/JuanSGarciaC/triaje-solicitudes">Ver el código</a>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

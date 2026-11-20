@@ -13,7 +13,7 @@ Aplicación que recibe solicitudes de soporte de TI, las **clasifica con un LLM*
 
 ## Demo en vivo
 
-**[triaje-solicitudes-demo.onrender.com](https://triaje-solicitudes-demo.onrender.com)** · API interactiva en [`/docs`](https://triaje-solicitudes-demo.onrender.com/docs)
+**[triaje-solicitudes-demo.onrender.com](https://triaje-solicitudes-demo.onrender.com)** · API interactiva en [`/docs`](https://triaje-solicitudes-demo.onrender.com/docs) · Presentación en [`/como-funciona`](https://triaje-solicitudes-demo.onrender.com/como-funciona) (HTML estático, se lee sin JS)
 
 Qué probar:
 1. **Bandeja**: elige una solicitud de ejemplo, envíala y mira qué rama toma en el lienzo y por qué.

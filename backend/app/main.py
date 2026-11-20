@@ -211,6 +211,18 @@ def eval_reports() -> list[dict]:
     return reports
 
 
+# Página de presentación: HTML estático que se lee sin JS. Va antes del panel para que su ruta comodín no la tape.
+LANDING = Path(__file__).parent / "landing"
+
+
+@app.api_route("/como-funciona", methods=["GET", "HEAD"], include_in_schema=False)
+def landing():
+    return FileResponse(LANDING / "index.html")
+
+
+app.mount("/como-funciona", StaticFiles(directory=LANDING), name="landing")
+
+
 # Panel compilado (solo si existe, p. ej. en el contenedor). En desarrollo lo sirve Vite.
 STATIC = Path(settings.static_dir)
 if (STATIC / "index.html").is_file():
