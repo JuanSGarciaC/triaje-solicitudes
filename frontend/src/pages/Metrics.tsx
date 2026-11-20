@@ -1,5 +1,6 @@
 import { api, useLoad } from "../api";
 import { ErrorNote } from "../components";
+import { CountUp } from "../motion";
 import { CATEGORY_LABEL, STATUS_LABEL, label } from "../labels";
 import type { Status } from "../types";
 import type { AppConfig } from "../types";
@@ -23,21 +24,29 @@ export default function Metrics({ config }: { config: AppConfig }) {
         <>
           <section className="tiles" aria-label="Resumen">
             <div className="tile glow">
-              <span className="tile-value">{data.total}</span>
+              <span className="tile-value">
+                <CountUp value={data.total} fromZero />
+              </span>
               <span className="muted">Solicitudes recibidas</span>
             </div>
             <div className="tile glow">
-              <span className="tile-value">{pct(data.auto_approved_share)}</span>
+              <span className="tile-value">
+                <CountUp value={data.auto_approved_share} format={pct} fromZero />
+              </span>
               <span className="muted">Aprobadas automáticamente</span>
             </div>
             <div className="tile glow">
-              <span className="tile-value">{pct(data.human_correction_rate)}</span>
+              <span className="tile-value">
+                {data.human_correction_rate === null ? pct(null) : <CountUp value={data.human_correction_rate} format={pct} fromZero />}
+              </span>
               <span className="muted">
                 Corregidas por personas ({data.reviewed_count} revisadas)
               </span>
             </div>
             <div className="tile glow">
-              <span className="tile-value">{Math.round(data.avg_confidence * 100)}%</span>
+              <span className="tile-value">
+                <CountUp value={data.avg_confidence} format={pct} fromZero />
+              </span>
               <span className="muted">Confianza promedio (umbral {Math.round(config.confidence_threshold * 100)}%)</span>
             </div>
           </section>

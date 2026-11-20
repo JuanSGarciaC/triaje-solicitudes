@@ -82,6 +82,9 @@ a { color: var(--cyan); }
 .e-pol_rev { color: var(--review); }
 .e-rev_hum { color: var(--human); }
 @keyframes flow { to { stroke-dashoffset: -17; } }
+/* Enjambre (canvas): bajo los nodos HTML, encima de las aristas. Sustituye a los trazos CSS cuando arranca. */
+.swarm { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.swarm-on .edge-flow { display: none; }
 .dot { opacity: 0; color: #fff; fill: currentColor; transition: opacity 0.15s; }
 .dot.on { opacity: 1; }
 .dot circle:first-child { fill: var(--cyan); }
@@ -119,6 +122,11 @@ button.node:hover, button.node[aria-pressed="true"] { border-color: var(--c); }
 @keyframes spin { to { --angle: 360deg; } }
 .flow-caption { margin: 0; padding: 0.7rem 1.25rem; border-top: 1px solid var(--line); background: rgba(6, 9, 19, 0.6); font-size: 0.92rem; color: var(--muted); min-height: 2.9rem; }
 .flow-caption.sim { color: #c9c0ff; }
+/* B2: el texto pendiente ocupa su sitio sin verse; el cursor no tiene ancho. */
+.typed-rest { color: transparent; }
+.typed-caret { display: inline-block; width: 0; position: relative; }
+.typed-caret::after { content: ""; position: absolute; left: 1px; top: -0.85em; width: 2px; height: 1.05em; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 
 /* ---------- Formularios y controles ---------- */
 .form { display: grid; gap: 0.9rem; }

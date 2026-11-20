@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { clfLabel, pct, why } from "./labels";
+import { CountUp, Typed, reducedMotion } from "./motion";
+import { Swarm, destOf, type Dest, type SwarmItem } from "./swarm";
 import type { AppConfig, RequestItem, Status } from "./types";
 
 const W = 1100;
@@ -14,6 +16,8 @@ const EDGES = {
   rev_hum: "M865,290 L925,290",
 } as const;
 type EdgeId = keyof typeof EDGES;
+/** Móvil: el enjambre muestra una muestra representativa de la lista. */
+const LITE_MAX = 60;
 
 const at = (x: number, y: number) => ({ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` });
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
@@ -36,6 +40,13 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
   const [hot, setHot] = useState<EdgeId | null>(null);
   const paths = useRef<Partial<Record<EdgeId, SVGPathElement | null>>>({});
   const dot = useRef<SVGGElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const nodes = useRef<Partial<Record<Dest, HTMLElement | null>>>({});
+  const swarm = useRef<Swarm | null>(null);
+  const [lite] = useState(() => typeof matchMedia === "function" && matchMedia("(max-width: 600px), (pointer: coarse)").matches);
+  // El enjambre sustituye a la animación CSS de las aristas solo cuando ya pintó su primer fotograma.
+  const [swarmOn, setSwarmOn] = useState(false);
   const branch: EdgeId = traveling?.status === "auto_approved" ? "pol_auto" : "pol_rev";
 
   useEffect(() => {
@@ -65,6 +76,28 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [traveling?.id]);
 
+  // Con reduced-motion no hay enjambre: el lienzo queda estático, como antes.
+  useEffect(() => {
+    if (reducedMotion() || !canvas.current || !stage.current || typeof ResizeObserver === "undefined") return;
+    const { auto, rev, hum } = nodes.current;
+    if (!auto || !rev || !hum) return;
+    let s: Swarm;
+    try {
+      s = new Swarm(canvas.current, stage.current, paths.current as Record<EdgeId, SVGPathElement>, { auto, rev, hum }, {
+        lite,
+        onStart: () => setSwarmOn(true),
+      });
+    } catch {
+      return; // sin canvas 2D: queda el lienzo de siempre
+    }
+    swarm.current = s;
+    return () => {
+      s.destroy();
+      swarm.current = null;
+      setSwarmOn(false);
+    };
+  }, [lite]);
+
   const always = config.always_review_priorities;
   const wouldAuto = (t: number) =>
     items.filter((r) => r.pred_confidence >= t && !always.includes(r.pred_priority)).length;
@@ -93,6 +126,36 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
   const dim = (s: Status) => (filter && filter !== s ? "dim" : "");
   const toggle = (s: Status) => onFilter(filter === s ? null : s);
 
+  useEffect(() => {
+    const s = swarm.current;
+    if (!s) return;
+    const autoAt = (r: RequestItem, t: number) => r.pred_confidence >= t && !always.includes(r.pred_priority);
+    let list = items;
+    if (lite && list.length > LITE_MAX) {
+      const k = list.length / LITE_MAX;
+      list = Array.from({ length: LITE_MAX }, (_, i) => list[Math.floor(i * k)]);
+    }
+    const sw: SwarmItem[] = list.map((r) => {
+      const realDest = destOf(r.status);
+      const dest: Dest = simulating ? (autoAt(r, threshold) ? "auto" : "rev") : realDest;
+      return {
+        id: r.id,
+        real: r.status,
+        dest,
+        priority: r.final_priority ?? r.pred_priority,
+        confidence: r.pred_confidence,
+        shifted: simulating && (dest === "auto") !== (r.status === "auto_approved"),
+      };
+    });
+    s.setItems(sw, traveling?.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, threshold, simulating, swarmOn, lite]);
+
+  useEffect(() => {
+    swarm.current?.setFlow(flow, total);
+    swarm.current?.setFocus(filter, hot);
+  });
+
   let caption: string;
   if (simulating)
     caption =
@@ -110,7 +173,7 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
   return (
     <section className="flow glow" aria-label="Lienzo de decisión">
       <div className="flow-scroll">
-        <div className={`flow-stage ${simulating ? "simulating" : ""}`}>
+        <div ref={stage} className={`flow-stage ${simulating ? "simulating" : ""} ${swarmOn ? "swarm-on" : ""}`}>
           <svg viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
             <defs>
               <linearGradient id="g-main" x1="0" x2="1">
@@ -143,10 +206,13 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
               <circle r="4.5" className="dot-core" />
             </g>
           </svg>
+          <canvas ref={canvas} className="swarm" aria-hidden="true" />
 
           <div className={`node n-in ${step >= 0 ? "lit" : ""}`} style={at(90, 180)}>
             <span className="node-label">Solicitud</span>
-            <strong className="node-count">{total}</strong>
+            <strong className="node-count">
+              <CountUp value={total} />
+            </strong>
             <span className="node-sub">recibidas</span>
           </div>
 
@@ -181,6 +247,7 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
           </div>
 
           <button
+            ref={(el) => void (nodes.current.auto = el)}
             className={`node n-auto ${end("pol_auto")} ${dim("auto_approved")}`}
             style={at(850, 80)}
             aria-pressed={filter === "auto_approved"}
@@ -189,11 +256,14 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
             onPointerLeave={() => setHot(null)}
           >
             <span className="node-label">Aprobada sola</span>
-            <strong className="node-count">{autoN}</strong>
+            <strong className="node-count">
+              <CountUp value={autoN} />
+            </strong>
             <span className="node-sub">{simulating ? "se aprobarían sin revisión" : "sin intervención humana"}</span>
           </button>
 
           <button
+            ref={(el) => void (nodes.current.rev = el)}
             className={`node n-rev ${end("pol_rev")} ${dim("needs_review")}`}
             style={at(790, 290)}
             aria-pressed={filter === "needs_review"}
@@ -202,11 +272,14 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
             onPointerLeave={() => setHot(null)}
           >
             <span className="node-label">Revisión humana</span>
-            <strong className="node-count">{revN}</strong>
+            <strong className="node-count">
+              <CountUp value={revN} />
+            </strong>
             <span className="node-sub">{simulating ? "irían a una persona" : "en cola"}</span>
           </button>
 
           <button
+            ref={(el) => void (nodes.current.hum = el)}
             className={`node n-hum ${dim("reviewed")}`}
             style={at(1000, 290)}
             aria-pressed={filter === "reviewed"}
@@ -215,13 +288,15 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
             onPointerLeave={() => setHot(null)}
           >
             <span className="node-label">Decisión humana</span>
-            <strong className="node-count">{reviewed}</strong>
+            <strong className="node-count">
+              <CountUp value={reviewed} />
+            </strong>
             <span className="node-sub">{corrected} corregidas</span>
           </button>
         </div>
       </div>
       <p className={`flow-caption ${simulating ? "sim" : ""}`} aria-live="polite">
-        {caption}
+        <Typed text={caption} animate={!!traveling && step >= 4 && !simulating} />
       </p>
     </section>
   );
