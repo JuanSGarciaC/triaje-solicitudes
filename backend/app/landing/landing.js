@@ -151,10 +151,11 @@
     tabs.hidden = false;
     show("auto");
     caseEls.forEach((c) => setStep(c, "1"));
-    // El paso activo es el que cruza la línea central de la pantalla.
+    // El paso activo es el que cruza la línea del 20 % de la pantalla, justo bajo el borde del tique fijo:
+    // su texto queda fijo a esa altura (.step-body sticky) y se lee al lado del tique, sin hueco arriba.
     stepIO = new IntersectionObserver((entries) => {
       for (const e of entries) if (e.isIntersecting) setStep(e.target.closest(".case"), e.target.dataset.step);
-    }, { rootMargin: "-50% 0px -50% 0px" });
+    }, { rootMargin: "-20% 0px -79% 0px" });
     cases.querySelectorAll(".step").forEach((s) => stepIO.observe(s));
   };
   const disable = () => {

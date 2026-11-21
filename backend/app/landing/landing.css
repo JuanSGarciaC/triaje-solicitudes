@@ -153,6 +153,8 @@ html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"
 .cases.on .case { margin-top: 1rem; }
 .cases.on .stage { position: sticky; top: 16vh; }
 .cases.on .step { min-height: 58vh; opacity: 0.35; transition: opacity 0.4s; }
+/* El texto del paso queda fijo a la altura del tique: sin hueco arriba mientras se desplaza. */
+.cases.on .step-body { position: sticky; top: 16vh; }
 .cases.on .step:last-child { min-height: 68vh; }
 .cases.on .step.active { opacity: 1; }
 .cases.on [data-from] { opacity: 0; transform: translateY(6px); transition: opacity 0.35s var(--ease), transform 0.35s var(--ease); }
@@ -224,3 +226,7 @@ html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"
 .try-out .reasons { margin: 0.7rem 0 0; padding-left: 1.1rem; font-size: 0.95rem; }
 .try-out .note { font-size: 0.85rem; color: #5b6170; margin: 0.6rem 0 0; }
 @media (max-width: 767px) { .try-grid { grid-template-columns: 1fr; } }
+
+.link-card { display: block; text-decoration: none; color: inherit; transition: transform 0.2s var(--ease), border-color 0.2s; }
+.link-card:hover { transform: translateY(-3px); border-top-color: var(--media); }
+.link-card h3::after { content: " →"; }

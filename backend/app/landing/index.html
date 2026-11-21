@@ -127,10 +127,10 @@
           <h3 id="c-auto" class="case-title">Caso 1 · Se aprueba sola</h3>
           <div class="case-grid">
             <ol class="steps">
-              <li class="step" data-step="1"><p class="step-n">Recibida</p><h4>Una petición clara</h4><p>Pide instalar Office con Excel para el cierre de mes. Sin urgencia ni ambigüedad.</p></li>
-              <li class="step" data-step="2"><p class="step-n">Clasificada</p><h4>Software, prioridad media, 0,90</h4><p>Clasificador de reglas de la demo pública: encontró «instalar», «Office» y «Excel», palabras clave de software.</p><p class="hint">Arrastra el divisor para comparar la solicitud cruda con la clasificada.</p></li>
-              <li class="step" data-step="3"><p class="step-n">Política</p><h4>Las dos condiciones se cumplen</h4><p>0,90 supera el umbral de 0,75 y la prioridad no es alta. Se aprueba sola.</p></li>
-              <li class="step" data-step="4"><p class="step-n">Sin persona</p><h4>Nadie la mira, y queda registrado</h4><p>El historial guarda la predicción, el motivo y el umbral de ese momento. Si mañana cambia el umbral, se sigue sabiendo por qué pasó.</p></li>
+              <li class="step" data-step="1"><div class="step-body"><p class="step-n">Recibida</p><h4>Una petición clara</h4><p>Pide instalar Office con Excel para el cierre de mes. Sin urgencia ni ambigüedad.</p></div></li>
+              <li class="step" data-step="2"><div class="step-body"><p class="step-n">Clasificada</p><h4>Software, prioridad media, 0,90</h4><p>Clasificador de reglas de la demo pública: encontró «instalar», «Office» y «Excel», palabras clave de software.</p><p class="hint">Arrastra el divisor para comparar la solicitud cruda con la clasificada.</p></div></li>
+              <li class="step" data-step="3"><div class="step-body"><p class="step-n">Política</p><h4>Las dos condiciones se cumplen</h4><p>0,90 supera el umbral de 0,75 y la prioridad no es alta. Se aprueba sola.</p></div></li>
+              <li class="step" data-step="4"><div class="step-body"><p class="step-n">Sin persona</p><h4>Nadie la mira, y queda registrado</h4><p>El historial guarda la predicción, el motivo y el umbral de ese momento. Si mañana cambia el umbral, se sigue sabiendo por qué pasó.</p></div></li>
             </ol>
             <div class="stage">
               <div class="ticket band-media">
@@ -157,10 +157,10 @@
           <h3 id="c-human" class="case-title">Caso 2 · Pasa por una persona</h3>
           <div class="case-grid">
             <ol class="steps">
-              <li class="step" data-step="1"><p class="step-n">Recibida</p><h4>Urgencia escrita, no real</h4><p>«Tengo que entregarlo hoy». Para quien escribe es urgente; para la mesa de ayuda es un archivo que falla.</p></li>
-              <li class="step" data-step="2"><p class="step-n">Clasificada</p><h4>Software, prioridad alta, 0,90</h4><p>Gemini, prueba final del 2026-10-21. Acierta la categoría y sube la prioridad.</p><p class="hint">Arrastra el divisor para comparar la solicitud cruda con la clasificada.</p></li>
-              <li class="step" data-step="3"><p class="step-n">Política</p><h4>Seguro, pero no basta</h4><p>La confianza supera el umbral, pero la prioridad alta siempre pasa por una persona. La regla no se fía de la seguridad del modelo.</p></li>
-              <li class="step" data-step="4"><p class="step-n">Sello de la persona</p><h4>Corregida a media</h4><p>Quien revisa confirma la categoría y baja la prioridad. Se guardan las dos cosas: lo que dijo el modelo y lo que decidió la persona.</p><p class="muted small">La corrección mostrada es la etiqueta esperada del conjunto de evaluación.</p></li>
+              <li class="step" data-step="1"><div class="step-body"><p class="step-n">Recibida</p><h4>Urgencia escrita, no real</h4><p>«Tengo que entregarlo hoy». Para quien escribe es urgente; para la mesa de ayuda es un archivo que falla.</p></div></li>
+              <li class="step" data-step="2"><div class="step-body"><p class="step-n">Clasificada</p><h4>Software, prioridad alta, 0,90</h4><p>Gemini, prueba final del 2026-10-21. Acierta la categoría y sube la prioridad.</p><p class="hint">Arrastra el divisor para comparar la solicitud cruda con la clasificada.</p></div></li>
+              <li class="step" data-step="3"><div class="step-body"><p class="step-n">Política</p><h4>Seguro, pero no basta</h4><p>La confianza supera el umbral, pero la prioridad alta siempre pasa por una persona. La regla no se fía de la seguridad del modelo.</p></div></li>
+              <li class="step" data-step="4"><div class="step-body"><p class="step-n">Sello de la persona</p><h4>Corregida a media</h4><p>Quien revisa confirma la categoría y baja la prioridad. Se guardan las dos cosas: lo que dijo el modelo y lo que decidió la persona.</p><p class="muted small">La corrección mostrada es la etiqueta esperada del conjunto de evaluación.</p></div></li>
             </ol>
             <div class="stage">
               <div class="ticket band-alta">
@@ -187,10 +187,10 @@
           <h3 id="c-fail" class="case-title">Caso 3 · El modelo falla</h3>
           <div class="case-grid">
             <ol class="steps">
-              <li class="step" data-step="1"><p class="step-n">Recibida</p><h4>Una cuenta bloqueada</h4><p>Llega mientras el proveedor del modelo no responde: cuota agotada, caída o una respuesta que no es JSON válido.</p></li>
-              <li class="step" data-step="2"><p class="step-n">Respaldo</p><h4>Confianza 0, nunca un invento</h4><p>Tras los reintentos, la solicitud recibe una clasificación de respaldo con confianza 0 y queda marcada. El panel avisa y la filtra.</p><p class="hint">Arrastra el divisor para comparar la solicitud cruda con el respaldo.</p></li>
-              <li class="step" data-step="3"><p class="step-n">Política</p><h4>Directa a una persona</h4><p>Un fallo del modelo es un motivo propio para revisar, distinto de la baja confianza.</p></li>
-              <li class="step" data-step="4"><p class="step-n">Reclasificar</p><h4>Cuando el modelo vuelve</h4><p>Desde la cola se pide otra clasificación: acceso y cuentas, media, 0,90. La política decide de nuevo y la aprueba. El historial guarda las dos clasificaciones.</p><p class="muted small">En la demo pública el fallo es simulado: la primera solicitud de ejemplo se siembra así.</p></li>
+              <li class="step" data-step="1"><div class="step-body"><p class="step-n">Recibida</p><h4>Una cuenta bloqueada</h4><p>Llega mientras el proveedor del modelo no responde: cuota agotada, caída o una respuesta que no es JSON válido.</p></div></li>
+              <li class="step" data-step="2"><div class="step-body"><p class="step-n">Respaldo</p><h4>Confianza 0, nunca un invento</h4><p>Tras los reintentos, la solicitud recibe una clasificación de respaldo con confianza 0 y queda marcada. El panel avisa y la filtra.</p><p class="hint">Arrastra el divisor para comparar la solicitud cruda con el respaldo.</p></div></li>
+              <li class="step" data-step="3"><div class="step-body"><p class="step-n">Política</p><h4>Directa a una persona</h4><p>Un fallo del modelo es un motivo propio para revisar, distinto de la baja confianza.</p></div></li>
+              <li class="step" data-step="4"><div class="step-body"><p class="step-n">Reclasificar</p><h4>Cuando el modelo vuelve</h4><p>Desde la cola se pide otra clasificación: acceso y cuentas, media, 0,90. La política decide de nuevo y la aprueba. El historial guarda las dos clasificaciones.</p><p class="muted small">En la demo pública el fallo es simulado: la primera solicitud de ejemplo se siembra así.</p></div></li>
             </ol>
             <div class="stage">
               <div class="ticket band-media">
@@ -215,8 +215,22 @@
         </article>
       </section>
 
+      <!-- A2: lo que hace el panel, con enlace directo a cada pantalla -->
+      <section class="features" data-tone="papel" aria-labelledby="feat-title">
+        <h2 id="feat-title" class="reveal">Lo que hace el panel</h2>
+        <p class="muted reveal">Todo se puede probar en la demo pública. O deja que te lo muestre el <a href="/?recorrido=1">recorrido de 60 s</a>.</p>
+        <div class="cards">
+          <a class="card link-card reveal" href="/"><h3>Prueba tu solicitud</h3><p>Escribe un problema y mira el tique sellado con su motivo. No se guarda nada.</p></a>
+          <a class="card link-card reveal" href="/"><h3>Cada tique explica su sello</h3><p>«→ persona: prioridad alta». Y los sellos que ya tiene, sin abrir el detalle.</p></a>
+          <a class="card link-card reveal" href="/revision"><h3>Cola por urgencia</h3><p>Plazos por prioridad, sello VENCIDA y lo vencido primero. Reclasifica lo que cayó a respaldo.</p></a>
+          <a class="card link-card reveal" href="/tablero"><h3>Tablero por equipo</h3><p>Abierta, en curso, resuelta. Cada categoría va a su equipo; se toma y se resuelve con un clic.</p></a>
+          <a class="card link-card reveal" href="/metricas"><h3>Métricas de la mesa</h3><p>Carga por equipo, tiempos, resueltas en plazo y cuánto corrigen las personas cada semana.</p></a>
+          <a class="card link-card reveal" href="/tablero"><h3>Avisos firmados</h3><p>Cada cambio de estado genera un webhook con firma HMAC. En la demo, simulado y visible en la campana.</p></a>
+        </div>
+      </section>
+
       <!-- A7: cifras reales -->
-      <section class="results" data-tone="papel" aria-labelledby="results-title">
+      <section class="results" data-tone="tinta" aria-labelledby="results-title">
         <h2 id="results-title" class="reveal">Cifras de la prueba final</h2>
         <p class="muted reveal">10 casos etiquetados, una sola corrida sin ajustes posteriores. Gemini, umbral 0,75.</p>
         <dl class="stats">
@@ -242,7 +256,7 @@
       </section>
 
       <!-- A2: decisiones técnicas -->
-      <section class="decisions" data-tone="tinta" aria-labelledby="dec-title">
+      <section class="decisions" data-tone="papel" aria-labelledby="dec-title">
         <h2 id="dec-title" class="reveal">Decisiones que lo sostienen</h2>
         <div class="cards">
           <article class="card reveal"><h3>Ante la duda, una persona</h3><p>Si el modelo falla, responde algo inválido o se agota la cuota, la solicitud va a revisión con confianza 0. Nunca se inventa una clasificación.</p></article>
@@ -254,7 +268,7 @@
         </div>
       </section>
 
-      <section class="limits" data-tone="papel" aria-labelledby="lim-title">
+      <section class="limits" data-tone="tinta" aria-labelledby="lim-title">
         <div class="two-col">
           <div>
             <h2 id="lim-title" class="reveal">Limitaciones</h2>
@@ -263,16 +277,17 @@
               <li>El prompt se ajustó con el set de desarrollo; su cifra es optimista.</li>
               <li>La confianza del modelo está poco calibrada.</li>
               <li>Las etiquetas esperadas son criterio del autor y algunas son discutibles.</li>
-              <li>Todavía no hay inicio de sesión: el nombre de quien revisa es texto libre.</li>
+              <li>Todavía no hay inicio de sesión: el nombre de quien revisa o resuelve es texto libre.</li>
+              <li>Los avisos se envían una vez, sin reintentos; en la demo son simulados.</li>
               <li>La demo pública usa reglas, no un LLM, y solo acepta los ejemplos.</li>
             </ul>
           </div>
           <div>
             <h2 class="reveal">Siguiente paso</h2>
             <ol class="list roadmap reveal">
-              <li><strong>Trabajo diario.</strong> Estados, asignación por equipo y vencimientos por prioridad.</li>
-              <li><strong>Aprender de las correcciones.</strong> Las revisiones como casos de evaluación y la precisión por categoría a lo largo del tiempo.</li>
-              <li><strong>Uso real.</strong> Inicio de sesión con roles y avisos firmados a Slack o Teams.</li>
+              <li><strong>Uso real.</strong> Inicio de sesión con roles, para que el historial diga quién hizo qué.</li>
+              <li><strong>Avisos con reintentos.</strong> Entregarlos a través de una cola, con reintentos y registro de fallos.</li>
+              <li><strong>Evaluación continua.</strong> Correr la evaluación sobre las revisiones exportadas cada semana y alertar si baja.</li>
             </ol>
           </div>
         </div>
