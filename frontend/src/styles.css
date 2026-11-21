@@ -291,3 +291,17 @@ tbody th { color: var(--muted); }
 .tfields dd { margin: 0; font-weight: 700; }
 .stamp-drop-in { margin: 0.4rem 0 0.2rem; font-size: 1.05rem; animation: stamp-in 0.38s cubic-bezier(0.3, 1.5, 0.5, 1) 0.55s both; }
 @media (max-width: 900px) { .tryit { grid-template-columns: 1fr; } }
+
+/* ---------- Fase 1 a la vista ---------- */
+.nav-count { display: inline-block; margin-left: 0.25rem; padding: 0 0.45rem; border-radius: 999px; font: 600 0.74rem/1.6 var(--mono); background: var(--persona); color: #fff; }
+.inline-select { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--muted); }
+.inline-select select { padding: 0.2rem 0.4rem; font-size: 0.82rem; }
+.rows > li { position: relative; }
+.reason-line { font: 600 0.78rem var(--mono); }
+.reason-line.to-human { color: var(--persona); }
+.reason-line.to-auto { color: var(--grafito); }
+.stamp-chain { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+.mini-stamp { font: 600 0.64rem var(--mono); text-transform: uppercase; letter-spacing: 0.06em; padding: 0 0.35rem; border: 1px solid currentColor; border-radius: 2px; color: #5b6170; }
+.ms-fail { color: var(--alta); } .ms-auto { color: var(--grafito); } .ms-wait { color: var(--persona); border-style: dashed; }
+.ms-human { color: #fff; background: var(--persona); border-color: var(--persona); }
+.row-action { position: absolute; right: 0.6rem; bottom: 0.6rem; font-size: 0.8rem; padding: 0.3rem 0.7rem; background: #fffdf8; }

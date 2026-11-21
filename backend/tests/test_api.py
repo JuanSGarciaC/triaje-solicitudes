@@ -91,7 +91,7 @@ def test_guarda_el_motivo_y_reclasifica_un_respaldo(client, monkeypatch):
     down = client.post("/api/requests", json={"subject": "VPN caída", "body": "No conecta la VPN desde casa.", "requester": "Ana"}).json()
     assert down["status"] == "needs_review" and down["classifier_failed"] and down["policy_reason"] == "model_failed"
     cfg = client.get("/api/config").json()["classifier"]
-    assert cfg["healthy"] is False and cfg["failed_pending"] >= 1
+    assert cfg["healthy"] is False and cfg["failed_pending"] >= 1 and cfg["pending"] >= cfg["failed_pending"]
     assert down["id"] in [r["id"] for r in client.get("/api/requests?failed=true").json()]
 
     monkeypatch.setattr(main, "get_classifier", lambda: real)

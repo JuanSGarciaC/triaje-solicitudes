@@ -74,6 +74,7 @@ class ClassifierStatus(BaseModel):
     version: str
     healthy: bool  # False si la última clasificación falló o la cuota está agotada
     failed_pending: int  # solicitudes por revisar que cayeron a respaldo
+    pending: int  # todas las que esperan a una persona
 
 
 class ConfigOut(BaseModel):

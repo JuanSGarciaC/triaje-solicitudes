@@ -1,12 +1,19 @@
 import { FormEvent, useState } from "react";
 import { api, useLoad } from "../api";
-import { ConfidenceMeter, Detail, ErrorNote, PriorityBadge, StatusBadge } from "../components";
+import { ConfidenceMeter, Detail, ErrorNote, PriorityBadge, StampChain, StatusBadge } from "../components";
 import Flow from "../Flow";
 import TryIt from "../TryIt";
-import { CATEGORY_LABEL, STATUS_LABEL, formatDate, label, ticketNo } from "../labels";
+import { CATEGORY_LABEL, STATUS_LABEL, formatDate, label, reasonCodes, reasonShort, ticketNo } from "../labels";
 import type { AppConfig, RequestItem, Status } from "../types";
 
 const FILTERS: (Status | null)[] = [null, "auto_approved", "needs_review", "reviewed"];
+const MOTIVES: [string, string][] = [
+  ["", "Cualquier motivo"],
+  ["auto", "Se aprobó sola"],
+  ["sensitive_priority", "Prioridad alta"],
+  ["low_confidence", "Baja confianza"],
+  ["model_failed", "El modelo no respondió"],
+];
 
 export default function Inbox({ config, onChange }: { config: AppConfig; onChange: () => void }) {
   const list = useLoad(() => api.listRequests(), []);
@@ -16,6 +23,21 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
   const [last, setLast] = useState<RequestItem | null>(null);
   const [filter, setFilter] = useState<Status | null>(null);
   const [open, setOpen] = useState<RequestItem | null>(null);
+  const [motive, setMotive] = useState("");
+  const [rowBusy, setRowBusy] = useState<number | null>(null);
+
+  async function reclassify(r: RequestItem) {
+    setRowBusy(r.id);
+    try {
+      await api.reclassify(r.id);
+      list.reload();
+      onChange();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setRowBusy(null);
+    }
+  }
   // Demo pública: se elige un ejemplo en vez de escribir (el servidor rechaza texto libre).
   const [ex, setEx] = useState(0);
   const data = config.demo ? { ...config.examples[ex], requester: "Visitante" } : form;
@@ -38,7 +60,12 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
   }
 
   const items = list.data ?? [];
-  const shown = filter ? items.filter((r) => r.status === filter) : items;
+  const codes = (r: RequestItem) => reasonCodes(r, config);
+  const shown = items.filter(
+    (r) =>
+      (!filter || r.status === filter) &&
+      (!motive || (motive === "auto" ? codes(r).length === 0 : codes(r).includes(motive))),
+  );
 
   return (
     <>
@@ -115,11 +142,21 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
                 </button>
               ))}
             </div>
+            <label className="inline-select">
+              Motivo
+              <select value={motive} onChange={(e) => setMotive(e.target.value)}>
+                {MOTIVES.map(([v, t]) => (
+                  <option key={v} value={v}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <ErrorNote message={list.error} />
           {list.data && shown.length === 0 && (
             <p className="muted">
-              {filter ? "Ninguna solicitud en este estado." : "Aún no hay solicitudes. Envía la primera desde el formulario."}
+              {filter || motive ? "Ninguna solicitud con este filtro." : "Aún no hay solicitudes. Envía la primera desde el formulario."}
             </p>
           )}
           <ul className="rows">
@@ -138,7 +175,16 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
                     <PriorityBadge value={r.final_priority ?? r.pred_priority} />
                     <StatusBadge value={r.status} />
                   </span>
+                  <span className={`reason-line ${codes(r).length ? "to-human" : "to-auto"}`}>
+                    {reasonShort(codes(r), r.pred_confidence, r.policy_threshold ?? config.confidence_threshold)}
+                  </span>
+                  <StampChain item={r} />
                 </button>
+                {r.classifier_failed && r.status === "needs_review" && (
+                  <button className="secondary row-action" onClick={() => reclassify(r)} disabled={rowBusy === r.id}>
+                    {rowBusy === r.id ? "Reclasificando…" : "Reclasificar"}
+                  </button>
+                )}
               </li>
             ))}
           </ul>

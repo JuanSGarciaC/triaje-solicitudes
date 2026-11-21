@@ -105,14 +105,15 @@ def health():
 def get_config(db: Session = Depends(get_db)):
     clf = get_classifier()
     last_failed = db.scalar(select(Request.classifier_failed).order_by(Request.id.desc()).limit(1))
-    pending = select(func.count(Request.id)).where(Request.status == "needs_review", Request.classifier_failed)
+    waiting = select(func.count(Request.id)).where(Request.status == "needs_review")
     return ConfigOut(
         brand_name=settings.brand_name,
         brand_tagline=settings.brand_tagline,
         classifier=ClassifierStatus(
             version=clf.version,
             healthy=not last_failed and not getattr(clf, "quota_exhausted", False),
-            failed_pending=db.scalar(pending) or 0,
+            failed_pending=db.scalar(waiting.where(Request.classifier_failed)) or 0,
+            pending=db.scalar(waiting) or 0,
         ),
         confidence_threshold=settings.confidence_threshold,
         categories=list(CATEGORIES),

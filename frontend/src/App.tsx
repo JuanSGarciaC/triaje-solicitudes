@@ -29,7 +29,15 @@ export default function App() {
           <NavLink to="/" end>
             Bandeja
           </NavLink>
-          <NavLink to="/revision">Por revisar</NavLink>
+          <NavLink to="/revision">
+            Por revisar{" "}
+            {config.data && (
+              <span className="nav-count" aria-label={`${config.data.classifier.pending} pendientes`}>
+                {config.data.classifier.pending}
+                {config.data.classifier.failed_pending > 0 && ` · ${config.data.classifier.failed_pending} en respaldo`}
+              </span>
+            )}
+          </NavLink>
           <NavLink to="/metricas">Métricas</NavLink>
           <NavLink to="/evaluacion">Evaluación</NavLink>
           {/* Página estática que sirve la API, fuera del router */}

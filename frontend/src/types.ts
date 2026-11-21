@@ -31,7 +31,7 @@ export interface AppConfig {
   priorities: string[];
   always_review_priorities: string[];
   demo: boolean;
-  classifier: { version: string; healthy: boolean; failed_pending: number };
+  classifier: { version: string; healthy: boolean; failed_pending: number; pending: number };
   examples: { subject: string; body: string }[];
 }
 

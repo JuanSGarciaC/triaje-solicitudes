@@ -36,6 +36,27 @@ export const ErrorNote = ({ message }: { message: string | null }) =>
     </p>
   ) : null;
 
+/** Sellos que ya tiene la solicitud, en orden: lo que el visitante ve sin abrir el detalle. */
+export function StampChain({ item }: { item: RequestItem }) {
+  const corrected =
+    item.status === "reviewed" && (item.final_category !== item.pred_category || item.final_priority !== item.pred_priority);
+  const marks: [string, string][] = [
+    ["Recibida", "done"],
+    [item.classifier_failed ? "Respaldo" : "Clasificada", item.classifier_failed ? "fail" : "done"],
+    [item.status === "auto_approved" ? "Sola" : "A persona", item.status === "auto_approved" ? "auto" : "wait"],
+  ];
+  if (item.status === "reviewed") marks.push([corrected ? "Corregida" : "Confirmada", "human"]);
+  return (
+    <span className="stamp-chain" aria-label={`Sellos: ${marks.map((m) => m[0]).join(", ")}`}>
+      {marks.map(([t, k], i) => (
+        <span key={i} className={`mini-stamp ms-${k}`} aria-hidden="true">
+          {t}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /** Aviso cuando el modelo falla: lo que cae a respaldo va a revisión humana, pero conviene saberlo. */
 export function ModelNotice({ config }: { config: AppConfig }) {
   const { healthy, failed_pending: n } = config.classifier;
