@@ -12,7 +12,7 @@ const COLS: Col[] = [
   { key: "en_curso", title: "En curso", hint: "Alguien la está atendiendo", pick: (r) => r.work_state === "en_curso" },
   { key: "resuelta", title: "Resuelta", hint: "Las más recientes", pick: (r) => r.work_state === "resuelta" },
 ];
-const RESOLVED_SHOWN = 6;
+const SHOWN = 8; // por columna; el resto se ve filtrando por equipo
 
 /** Tablero de trabajo: después del triaje, cada solicitud va a su equipo y se toma y se resuelve con un clic. */
 export default function Board({ config, onChange }: { config: AppConfig; onChange: () => void }) {
@@ -78,8 +78,8 @@ export default function Board({ config, onChange }: { config: AppConfig; onChang
         {COLS.map((c) => {
           let cards = items.filter(c.pick).sort((a, b) => a.due_at.localeCompare(b.due_at));
           const total = cards.length;
-          if (c.key === "resuelta")
-            cards = cards.sort((a, b) => (b.resolved_at ?? "").localeCompare(a.resolved_at ?? "")).slice(0, RESOLVED_SHOWN);
+          if (c.key === "resuelta") cards = cards.sort((a, b) => (b.resolved_at ?? "").localeCompare(a.resolved_at ?? ""));
+          cards = cards.slice(0, SHOWN);
           return (
             <section key={c.key} className={`board-col col-${c.key}`} aria-labelledby={`col-${c.key}`}>
               <h3 id={`col-${c.key}`}>
@@ -121,7 +121,11 @@ export default function Board({ config, onChange }: { config: AppConfig; onChang
                   </li>
                 ))}
               </ul>
-              {c.key === "resuelta" && total > RESOLVED_SHOWN && <p className="muted small">y {total - RESOLVED_SHOWN} más</p>}
+              {total > SHOWN && (
+                <p className="muted small">
+                  y {total - SHOWN} más{team ? "" : " · filtra por equipo para verlas"}
+                </p>
+              )}
             </section>
           );
         })}

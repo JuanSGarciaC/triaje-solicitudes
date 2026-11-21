@@ -29,6 +29,13 @@ def seed() -> None:
             review = {"category": "software" if i % 2 else r["pred_category"], "priority": "media", "reviewer": "Camila Torres",
                       "note": "Era una duda sobre licencias." if i % 2 else None}
             c.post(f"/api/requests/{r['id']}/review", json=review).raise_for_status()
+        # Trabajo en marcha para el tablero: unas tomadas y algunas resueltas.
+        open_ = [r for r in c.get("/api/requests", params={"limit": 200}).json() if r["status"] != "needs_review"]
+        for i, r in enumerate(open_[:12]):
+            who = {"actor": "Camila Torres" if i % 2 else "Andrés Pérez"}
+            c.post(f"/api/requests/{r['id']}/work", json={"action": "take", **who}).raise_for_status()
+            if i < 7:
+                c.post(f"/api/requests/{r['id']}/work", json={"action": "resolve", **who}).raise_for_status()
 
 
 def main() -> None:
@@ -52,11 +59,11 @@ def main() -> None:
         page.clock.pause_at(page.evaluate("Date.now()") / 1000 + 1)
         with page.expect_response("**/api/requests"):
             page.get_by_role("button", name="Enviar solicitud").click()
-        page.evaluate("scrollTo(0, 0)")  # el clic baja la página; el lienzo debe verse entero
-        clip = flow.bounding_box()
+        below_header = "scrollTo(0, document.querySelector('.flow').getBoundingClientRect().top + scrollY - 80)"
+        page.evaluate(below_header)  # el lienzo va debajo de «Prueba tu solicitud»; que no lo tape la cabecera fija
         frames = []
         for _ in range(56):
-            shot = Image.open(io.BytesIO(page.screenshot(clip=clip))).convert("RGB")
+            shot = Image.open(io.BytesIO(flow.screenshot(animations="allow"))).convert("RGB")
             frames.append(shot.resize((800, round(800 * shot.height / shot.width)), Image.LANCZOS))
             page.clock.run_for(60)
         page.clock.resume()
@@ -74,9 +81,9 @@ def main() -> None:
         slider.focus()
         for _ in range(3):  # 75 % -> 90 %
             slider.press("ArrowRight")
-        page.evaluate("scrollTo(0, 0)")
+        page.evaluate(below_header)
         page.wait_for_timeout(700)
-        page.screenshot(path=OUT / "02-umbral-simulado.png", clip=clip)
+        flow.screenshot(path=OUT / "02-umbral-simulado.png")
         page.get_by_role("button", name="Volver al umbral real").click()
 
         page.get_by_role("button", name="Decisión humana").click()
@@ -85,11 +92,17 @@ def main() -> None:
         page.screenshot(path=OUT / "03-detalle.png")
         page.keyboard.press("Escape")
 
-        for path, name in (("/revision", "04-revision"), ("/metricas", "05-metricas"), ("/evaluacion", "06-evaluacion")):
+        for path, name in (("/revision", "04-revision"), ("/metricas", "05-metricas"), ("/evaluacion", "06-evaluacion"),
+                           ("/tablero", "07-tablero")):
             page.goto(BASE + path)
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(700)
-            page.screenshot(path=OUT / f"{name}.png", full_page=True)
+            page.screenshot(path=OUT / f"{name}.png", full_page=name != "07-tablero")
+        page.goto(BASE)
+        page.get_by_role("button", name="Urgente", exact=True).click()
+        page.locator(".print-ticket .stamp").wait_for()
+        page.wait_for_timeout(1200)
+        page.locator(".tryit").screenshot(path=OUT / "08-prueba-tu-solicitud.png")
         browser.close()
 
 

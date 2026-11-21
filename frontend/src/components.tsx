@@ -157,7 +157,7 @@ export function Detail({ item, config, onClose }: { item: RequestItem | null; co
           <p className="muted">
             {item.requester} · {formatDate(item.created_at)} · solicitud N.º {ticketNo(item.id)}
           </p>
-          <p>
+          <p className="detail-stamp">
             <span className={`stamp stamp-${item.status}`}>{STATUS_LABEL[item.status]}</span>
           </p>
           <p className="body-text">{item.body}</p>

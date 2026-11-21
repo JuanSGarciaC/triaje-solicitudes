@@ -17,16 +17,21 @@ Aplicación que recibe solicitudes de soporte de TI, las **clasifica con un LLM*
 
 **[triaje-solicitudes-demo.onrender.com](https://triaje-solicitudes-demo.onrender.com)** · API interactiva en [`/docs`](https://triaje-solicitudes-demo.onrender.com/docs) · Presentación en [`/como-funciona`](https://triaje-solicitudes-demo.onrender.com/como-funciona) (HTML estático, se lee sin JS)
 
-Qué probar:
-1. **Bandeja**: elige una solicitud de ejemplo, envíala y mira qué rama toma en el lienzo y por qué.
+Qué probar (o pulsa **Ver en 60 s** para el recorrido guiado):
+0. **Prueba tu solicitud**: escribe un problema y mira el tique sellado con su motivo. No se guarda nada.
+1. **Bandeja**: elige una solicitud de ejemplo, envíala y mira qué rama toma en el lienzo y por qué. Cada tique dice su motivo en una línea.
 2. **Umbral**: mueve el control del nodo «Política» para ver cuántas solicitudes cambiarían de rama.
 3. **Por revisar**: confirma o corrige una clasificación; después ábrela desde «Decisión humana» para ver la predicción frente a tu decisión y su historial.
    La primera solicitud de ejemplo simula que el modelo no respondió: el panel lo avisa y desde la cola se puede **Reclasificar**.
-4. **Evaluación**: reglas frente a Gemini sobre los mismos 10 casos.
+4. **Tablero**: toma y resuelve solicitudes por equipo; los plazos por prioridad marcan lo vencido.
+5. **Métricas**: carga por equipo, tiempos y corrección humana por semana (semanas anteriores sembradas como ejemplo). Descarga las revisiones como casos de evaluación.
+6. **Avisos**: cada cambio de estado genera un webhook firmado; en la demo, simulado y visible en la campana.
+7. **Evaluación**: reglas frente a Gemini sobre los mismos 10 casos.
 
 Límites de la demo:
 - Usa el clasificador de reglas, sin LLM ni claves.
-- No acepta texto libre: solo se envían los 42 ejemplos del conjunto de evaluación, y las revisiones se guardan como «Visitante», sin nota. Así ningún visitante ve texto escrito por otro. La API lo exige, no solo el panel.
+- «Prueba tu solicitud» acepta texto libre pero no lo guarda: clasifica y descarta (10-1000 caracteres, 6 pruebas por minuto por IP).
+- No acepta texto libre que se guarde: solo se envían los 42 ejemplos del conjunto de evaluación, y las revisiones se guardan como «Visitante», sin nota. Así ningún visitante ve texto escrito por otro. La API lo exige, no solo el panel.
 - Cada IP puede hacer 10 envíos o revisiones por minuto y se guardan como máximo 300 solicitudes (se borran las más antiguas).
 - Hosting gratuito: el servicio se duerme tras 15 minutos sin visitas, el primer acceso tarda cerca de un minuto y los datos vuelven a los de ejemplo.
 
@@ -52,6 +57,10 @@ Un LLM puede equivocarse con total seguridad. Este proyecto no lo deja decidir s
 | **Métricas** | **Evaluación** |
 | ![Métricas: quién decidió y solicitudes por categoría](docs/img/05-metricas.png) | ![Evaluación: reglas frente a Gemini, matriz de confusión y errores](docs/img/06-evaluacion.png) |
 
+| **Tablero por equipo** | **Prueba tu solicitud** |
+|---|---|
+| ![Tablero: por revisar, abierta, en curso y resuelta, con plazos por prioridad](docs/img/07-tablero.png) | ![Prueba tu solicitud: el tique sale sellado con su motivo, sin guardarse](docs/img/08-prueba-tu-solicitud.png) |
+
 Sin librerías de UI ni de gráficos: SVG y CSS a mano. El estado se comunica con texto además de color, el foco es visible y las animaciones se apagan con `prefers-reduced-motion`. Capturas y GIF se regeneran con `scripts/capturas.py`.
 
 ## Arquitectura
@@ -67,6 +76,9 @@ React + Vite  ──►  FastAPI  ──►  Clasificador (mock | gemini | anthr
 - **Proveedores:** `mock` (reglas simples, sin costo), `gemini` (Google AI Studio, vía REST con `httpx`) y `anthropic`. Se elige con `LLM_PROVIDER`.
 - **Robustez:** reintentos con espera ante 429/500/503, parada limpia si se agota la cuota, validación estricta de la salida del modelo y degradación segura a revisión humana. Lo que cae a respaldo queda marcado (`classifier_failed`), `/api/config` informa el estado del clasificador, `GET /api/requests?failed=true` lo filtra y `POST /api/requests/{id}/reclassify` lo vuelve a clasificar.
 - **Por qué y cuándo:** cada solicitud guarda el motivo de la política (`model_failed`, `sensitive_priority`, `low_confidence` o `auto`) y el umbral vigente, y un historial que solo crece (`GET /api/requests/{id}/events`).
+- **Trabajo y plazos:** después del triaje, cada solicitud va al equipo de su categoría (`TEAM_ROUTES`) y pasa por abierta → en curso → resuelta (`POST /api/requests/{id}/work`). El plazo depende de la prioridad vigente (`SLA_HOURS`, por defecto alta 4 h, media 24 h, baja 72 h) y corre hasta resolver.
+- **Avisos:** cada cambio de estado genera un webhook con el payload JSON y `X-Sello-Signature: sha256=…` (HMAC del cuerpo exacto). Con `NOTIFY_URL` y `NOTIFY_SECRET` se envía fuera de la demo; si no, queda como «simulado» (`GET /api/notifications`). Un intento, sin reintentos.
+- **Prueba sin guardar:** `POST /api/classify/preview` clasifica texto libre y aplica la política sin persistir nada; si el LLM no está configurado o falla, responde el clasificador de reglas y lo avisa.
 - **Migraciones:** Alembic (`backend/migrations`). La API las aplica al arrancar; una base creada antes con `create_all` se marca como `0001` y sigue sin perder datos. Nueva migración: `cd backend; alembic revision --autogenerate -m "..."`.
 - **Entrada idempotente:** `POST /api/requests` acepta la cabecera `Idempotency-Key`. Si quien envía reintenta con la misma clave (por ejemplo el [integrador de webhooks](https://github.com/JuanSGarciaC/integrador-webhooks), que entrega *al menos una vez*), recibe la solicitud original con `200` y no se clasifica de nuevo.
 - **Seguridad:** el texto del usuario se trata como dato (instrucción anti-inyección en el prompt) y las claves viven en `.env`, que no se versiona.
