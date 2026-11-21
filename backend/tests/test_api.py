@@ -105,3 +105,13 @@ def test_motivos_de_la_politica():
     assert policy_reasons(Classification("software", "alta", "", 0.5, "")) == ["sensitive_priority", "low_confidence"]
     assert policy_reasons(Classification("software", "baja", "", 0.9, "")) == []
     assert policy_reasons(fallback("x")) == ["model_failed"]
+
+
+def test_historial_de_una_solicitud(client):
+    r = client.post("/api/requests", json={"subject": "Sistema caído", "body": "Producción caída para todos, urgente.", "requester": "Ana"}).json()
+    client.post(f"/api/requests/{r['id']}/review", json={"category": r["pred_category"], "priority": "media", "reviewer": "Bea"})
+    events = client.get(f"/api/requests/{r['id']}/events").json()
+    assert [e["kind"] for e in events] == ["received", "classified", "decided", "reviewed"]
+    assert events[0]["actor"] == "Ana" and "sensitive_priority" in events[2]["detail"]["reason"].split(",")
+    assert events[3]["actor"] == "Bea" and events[3]["detail"]["corrected"] is True
+    assert client.get("/api/requests/999999/events").status_code == 404

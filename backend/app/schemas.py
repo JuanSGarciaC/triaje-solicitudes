@@ -43,6 +43,15 @@ class RequestOut(BaseModel):
     reviewed_at: datetime | None
 
 
+class EventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    at: datetime
+    kind: str
+    actor: str
+    detail: dict
+
+
 class ClassifierStatus(BaseModel):
     version: str
     healthy: bool  # False si la última clasificación falló o la cuota está agotada

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, String, Text, false
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, String, Text, false
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
 
@@ -36,6 +36,27 @@ class Request(Base):
     reviewer: Mapped[str | None] = mapped_column(String(120), default=None)
     review_note: Mapped[str | None] = mapped_column(Text, default=None)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+    events: Mapped[list["RequestEvent"]] = relationship(
+        order_by="RequestEvent.id", cascade="all, delete-orphan", back_populates="request"
+    )
+
+    def log(self, kind: str, actor: str, **detail) -> None:
+        self.events.append(RequestEvent(kind=kind, actor=actor, detail=detail))
+
+
+class RequestEvent(Base):
+    """Historial de una solicitud: received, classified, decided, reviewed. Solo se añaden filas."""
+    __tablename__ = "request_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    request_id: Mapped[int] = mapped_column(ForeignKey("requests.id", ondelete="CASCADE"), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    kind: Mapped[str] = mapped_column(String(20))
+    actor: Mapped[str] = mapped_column(String(120))  # persona o "sistema"
+    detail: Mapped[dict] = mapped_column(JSON, default=dict)
+
+    request: Mapped[Request] = relationship(back_populates="events")
 
 
 class IdempotencyKey(Base):

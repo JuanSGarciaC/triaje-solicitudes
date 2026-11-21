@@ -59,3 +59,11 @@ def test_0002_marca_los_respaldos_anteriores(tmp_path):
     with eng.connect() as conn:
         row = conn.execute(text("SELECT classifier_failed, policy_reason FROM requests")).one()
     assert row == (1, None)
+
+
+def test_0003_reconstruye_el_historial_de_filas_anteriores(tmp_path):
+    eng = legacy_db(tmp_path)
+    migrate(eng)
+    with eng.connect() as conn:
+        kinds = conn.execute(text("SELECT kind FROM request_events ORDER BY id")).scalars().all()
+    assert kinds == ["received", "classified"]

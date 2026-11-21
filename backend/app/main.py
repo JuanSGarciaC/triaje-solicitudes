@@ -16,9 +16,9 @@ from .classifier import CATEGORIES, PRIORITIES, Classification, fallback, get_cl
 from .config import settings
 from .database import SessionLocal, get_db, migrate
 from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
-from .models import IdempotencyKey, Request
+from .models import IdempotencyKey, Request, RequestEvent
 from .policy import policy_reasons
-from .schemas import ClassifierStatus, ConfigOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
+from .schemas import ClassifierStatus, ConfigOut, EventOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
 
 @asynccontextmanager
@@ -41,6 +41,9 @@ def apply(item: Request, result: Classification, version: str) -> None:
     item.classifier_version, item.classifier_failed = version, result.failed
     item.policy_reason, item.policy_threshold = ",".join(reasons) or "auto", settings.confidence_threshold
     item.status = "needs_review" if reasons else "auto_approved"
+    item.log("classified", "sistema", version=version, category=result.category, priority=result.priority,
+             confidence=result.confidence, failed=result.failed)
+    item.log("decided", "sistema", status=item.status, reason=item.policy_reason, threshold=item.policy_threshold)
 
 
 def store(
@@ -48,6 +51,7 @@ def store(
 ) -> Request:
     classifier = get_classifier()
     item = Request(subject=subject, body=body, requester=requester)
+    item.log("received", requester)
     apply(item, result or classifier.classify(subject, body), classifier.version)
     db.add(item)
     if key:  # misma transacción: o quedan la solicitud y su clave, o ninguna
@@ -72,6 +76,8 @@ def seed_demo(db: Session) -> None:
     for i, r in enumerate(queue[: len(queue) // 2]):
         r.final_category, r.final_priority = r.pred_category, "media" if i % 2 else r.pred_priority
         r.reviewer, r.reviewed_at, r.status = "Camila Torres (ejemplo)", datetime.now(timezone.utc), "reviewed"
+        r.log("reviewed", r.reviewer, category=r.final_category, priority=r.final_priority,
+              corrected=r.final_priority != r.pred_priority)
     db.commit()
 
 
@@ -141,7 +147,9 @@ def create_request(
     # pasarse del tope por una fila hasta el siguiente envío; poner un candado si eso importa.
     excess = (db.scalar(select(func.count(Request.id))) or 0) - settings.demo_max_requests
     if excess > 0:
-        db.execute(delete(Request).where(Request.id.in_(select(Request.id).order_by(Request.id).limit(excess))))
+        oldest = select(Request.id).order_by(Request.id).limit(excess).scalar_subquery()
+        db.execute(delete(RequestEvent).where(RequestEvent.request_id.in_(oldest)))
+        db.execute(delete(Request).where(Request.id.in_(oldest)))
         db.commit()
     return item
 
@@ -184,9 +192,19 @@ def review_request(request_id: int, payload: ReviewIn, db: Session = Depends(get
     item.review_note = None if settings.demo_mode else payload.note
     item.reviewed_at = datetime.now(timezone.utc)
     item.status = "reviewed"
+    corrected = (item.final_category, item.final_priority) != (item.pred_category, item.pred_priority)
+    item.log("reviewed", item.reviewer, category=item.final_category, priority=item.final_priority, corrected=corrected)
     db.commit()
     db.refresh(item)
     return item
+
+
+@app.get("/api/requests/{request_id}/events", response_model=list[EventOut])
+def request_events(request_id: int, db: Session = Depends(get_db)):
+    item = db.get(Request, request_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="La solicitud no existe.")
+    return item.events
 
 
 @app.post("/api/requests/{request_id}/reclassify", response_model=RequestOut, dependencies=[Depends(demo_guard)])
