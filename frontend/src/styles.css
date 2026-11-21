@@ -192,10 +192,7 @@ button.chip:hover { color: var(--ink); }
 .stamp-reviewed { color: var(--persona); }
 .ticket-sheet { position: relative; }
 .sheet-no { font: 600 0.74rem var(--mono); color: var(--muted); letter-spacing: 0.08em; margin: 0 0 0.3rem; }
-.stamp-drop {
-  position: absolute; z-index: 2; top: 3.2rem; right: 1.5rem; font-size: 1.6rem; color: var(--persona); background: rgba(244, 239, 230, 0.85);
-  transform: rotate(-12deg); animation: stamp-in 0.38s cubic-bezier(0.3, 1.5, 0.5, 1) both;
-}
+.stamp-drop { color: var(--persona); font-size: 1.4rem; transform: rotate(-10deg); animation: stamp-in 0.38s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
 @keyframes stamp-in { from { opacity: 0; transform: rotate(-4deg) scale(1.8); } }
 
 .result { margin-top: 1rem; padding: 0.9rem; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); }
@@ -305,3 +302,11 @@ tbody th { color: var(--muted); }
 .ms-fail { color: var(--alta); } .ms-auto { color: var(--grafito); } .ms-wait { color: var(--persona); border-style: dashed; }
 .ms-human { color: #fff; background: var(--persona); border-color: var(--persona); }
 .row-action { position: absolute; right: 0.6rem; bottom: 0.6rem; font-size: 0.8rem; padding: 0.3rem 0.7rem; background: #fffdf8; }
+
+/* ---------- Vencimientos ---------- */
+.due { font: 600 0.74rem var(--mono); color: #5b6170; text-transform: uppercase; letter-spacing: 0.04em; }
+.due.late { color: var(--alta); }
+.nav-overdue { color: #ffd4d9; }
+.stamp-late { color: var(--alta); transform: rotate(6deg); font-size: 1.05rem; }
+.sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.sheet-stamps { flex: 0 0 auto; min-width: 9rem; min-height: 3.2rem; display: grid; place-items: center end; padding-top: 0.4rem; }

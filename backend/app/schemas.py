@@ -41,6 +41,8 @@ class RequestOut(BaseModel):
     reviewer: str | None
     review_note: str | None
     reviewed_at: datetime | None
+    due_at: datetime
+    overdue: bool
 
 
 class PreviewIn(BaseModel):
@@ -75,6 +77,7 @@ class ClassifierStatus(BaseModel):
     healthy: bool  # False si la última clasificación falló o la cuota está agotada
     failed_pending: int  # solicitudes por revisar que cayeron a respaldo
     pending: int  # todas las que esperan a una persona
+    overdue: int  # pendientes con el plazo vencido
 
 
 class ConfigOut(BaseModel):
@@ -85,6 +88,7 @@ class ConfigOut(BaseModel):
     priorities: list[str]
     always_review_priorities: list[str]
     demo: bool
+    sla_hours: dict[str, float]
     classifier: ClassifierStatus
     examples: list[dict[str, str]]
 

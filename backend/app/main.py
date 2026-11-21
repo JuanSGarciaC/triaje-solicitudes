@@ -1,6 +1,6 @@
 import json
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response
@@ -16,7 +16,7 @@ from .classifier import CATEGORIES, PRIORITIES, Classification, MockClassifier, 
 from .config import settings
 from .database import SessionLocal, get_db, migrate
 from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
-from .models import IdempotencyKey, Request, RequestEvent
+from .models import IdempotencyKey, Request, RequestEvent, sla_hours
 from .policy import policy_reasons
 from .schemas import ClassifierStatus, ConfigOut, EventOut, PreviewIn, PreviewOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
@@ -73,12 +73,20 @@ def seed_demo(db: Session) -> None:
         store(db, e["subject"], e["body"], "Laura Ríos (ejemplo)", result=None if i else fallback(e["subject"]))
         for i, e in enumerate(SEED)
     ]
+    # Fechas escalonadas entre hace 5 h y hace ~48 h: la cola arranca con plazos vencidos (la urgente, la del
+    # respaldo) y otros por vencer.
+    now = datetime.now(timezone.utc)
+    for i, r in enumerate(stored):
+        r.created_at = now - timedelta(minutes=300 + 85 * (len(stored) - 1 - i))
+        for ev in r.events:
+            ev.at = r.created_at
     queue = [r for r in stored if r.status == "needs_review" and not r.classifier_failed]
     for i, r in enumerate(queue[: len(queue) // 2]):
         r.final_category, r.final_priority = r.pred_category, "media" if i % 2 else r.pred_priority
-        r.reviewer, r.reviewed_at, r.status = "Camila Torres (ejemplo)", datetime.now(timezone.utc), "reviewed"
+        r.reviewer, r.reviewed_at, r.status = "Camila Torres (ejemplo)", r.created_at + timedelta(hours=1), "reviewed"
         r.log("reviewed", r.reviewer, category=r.final_category, priority=r.final_priority,
               corrected=r.final_priority != r.pred_priority)
+        r.events[-1].at = r.reviewed_at
     db.commit()
 
 
@@ -114,12 +122,14 @@ def get_config(db: Session = Depends(get_db)):
             healthy=not last_failed and not getattr(clf, "quota_exhausted", False),
             failed_pending=db.scalar(waiting.where(Request.classifier_failed)) or 0,
             pending=db.scalar(waiting) or 0,
+            overdue=sum(r.overdue for r in db.scalars(select(Request).where(Request.status == "needs_review"))),
         ),
         confidence_threshold=settings.confidence_threshold,
         categories=list(CATEGORIES),
         priorities=list(PRIORITIES),
         always_review_priorities=[p.strip() for p in settings.always_review_priorities.split(",") if p.strip()],
         demo=settings.demo_mode,
+        sla_hours=sla_hours(),
         examples=EXAMPLES if settings.demo_mode else [],
     )
 

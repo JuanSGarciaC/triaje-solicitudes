@@ -34,6 +34,15 @@ export const formatDate = (iso: string) =>
     timeStyle: "short",
   });
 
+/** «vence en 2 h» o «vencida hace 3 h»; null si ya no corre el plazo. */
+export function dueText(r: RequestItem): string | null {
+  if (r.status !== "needs_review") return null;
+  const ms = new Date(r.due_at).getTime() - Date.now();
+  const abs = Math.abs(ms) / 60000;
+  const span = abs < 60 ? `${Math.max(1, Math.round(abs))} min` : abs < 48 * 60 ? `${Math.round(abs / 60)} h` : `${Math.round(abs / 1440)} días`;
+  return ms < 0 ? `Vencida hace ${span}` : `Vence en ${span}`;
+}
+
 export const ticketNo = (id: number) => String(id).padStart(4, "0");
 
 export const pct = (v: number) => `${Math.round(v * 100)} %`;

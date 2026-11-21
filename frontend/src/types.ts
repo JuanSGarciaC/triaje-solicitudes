@@ -21,6 +21,8 @@ export interface RequestItem {
   reviewer: string | null;
   review_note: string | null;
   reviewed_at: string | null;
+  due_at: string;
+  overdue: boolean;
 }
 
 export interface AppConfig {
@@ -31,7 +33,8 @@ export interface AppConfig {
   priorities: string[];
   always_review_priorities: string[];
   demo: boolean;
-  classifier: { version: string; healthy: boolean; failed_pending: number; pending: number };
+  classifier: { version: string; healthy: boolean; failed_pending: number; pending: number; overdue: number };
+  sla_hours: Record<string, number>;
   examples: { subject: string; body: string }[];
 }
 

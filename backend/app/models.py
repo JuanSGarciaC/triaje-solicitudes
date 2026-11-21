@@ -1,9 +1,14 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, String, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from .config import settings
 from .database import Base
+
+
+def sla_hours() -> dict[str, float]:
+    return {k.strip(): float(v) for k, v in (p.split("=") for p in settings.sla_hours.split(",") if "=" in p)}
 
 
 def utcnow() -> datetime:
@@ -40,6 +45,25 @@ class Request(Base):
     events: Mapped[list["RequestEvent"]] = relationship(
         order_by="RequestEvent.id", cascade="all, delete-orphan", back_populates="request"
     )
+
+    @property
+    def priority(self) -> str:
+        """Prioridad vigente: la de la persona si la corrigió; si no, la del modelo."""
+        return self.final_priority or self.pred_priority
+
+    @property
+    def closed(self) -> bool:
+        """Ya no corre el plazo: nadie tiene que hacer nada con ella."""
+        return self.status != "needs_review"
+
+    @property
+    def due_at(self) -> datetime:
+        created = self.created_at if self.created_at.tzinfo else self.created_at.replace(tzinfo=timezone.utc)
+        return created + timedelta(hours=sla_hours().get(self.priority, 24))
+
+    @property
+    def overdue(self) -> bool:
+        return not self.closed and utcnow() > self.due_at
 
     def log(self, kind: str, actor: str, **detail) -> None:
         self.events.append(RequestEvent(kind=kind, actor=actor, detail=detail))

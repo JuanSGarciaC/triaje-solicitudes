@@ -145,3 +145,21 @@ def test_prueba_tu_solicitud_usa_reglas_si_falta_la_clave(client, monkeypatch):
     monkeypatch.setattr(main, "get_classifier", sin_clave)
     out = client.post("/api/classify/preview", json={"body": "Necesito instalar Excel en mi equipo."}).json()
     assert out["rules_fallback"] is True and out["classifier"].startswith("mock") and out["status"] == "auto_approved"
+
+
+def test_vencimiento_por_prioridad(client):
+    from datetime import timedelta
+
+    from app.database import SessionLocal
+    from app.models import Request
+
+    r = client.post("/api/requests", json={"subject": "Producción caída", "body": "El sistema de producción está caído para todos.", "requester": "Ana"}).json()
+    assert r["status"] == "needs_review" and r["overdue"] is False
+    with SessionLocal() as db:
+        item = db.get(Request, r["id"])
+        item.created_at = item.created_at - timedelta(hours=5)  # alta: 4 h de plazo
+        db.commit()
+    assert client.get(f"/api/requests/{r['id']}").json()["overdue"] is True
+    assert client.get("/api/config").json()["classifier"]["overdue"] >= 1
+    client.post(f"/api/requests/{r['id']}/review", json={"category": r["pred_category"], "priority": "alta", "reviewer": "Bea"})
+    assert client.get(f"/api/requests/{r['id']}").json()["overdue"] is False  # revisada: el plazo deja de correr

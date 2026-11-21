@@ -2,13 +2,14 @@ import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, useLoad } from "../api";
 import { ConfidenceMeter, ErrorNote, PriorityBadge, Timeline } from "../components";
-import { CATEGORY_LABEL, PRIORITY_LABEL, clfLabel, formatDate, label, ticketNo, why } from "../labels";
+import { CATEGORY_LABEL, PRIORITY_LABEL, clfLabel, dueText, formatDate, label, ticketNo, why } from "../labels";
 import type { AppConfig } from "../types";
 
 export default function Review({ config, onChange }: { config: AppConfig; onChange: () => void }) {
   const queue = useLoad(() => api.listRequests("needs_review"), []);
   const [params, setParams] = useSearchParams();
   const onlyFailed = params.has("respaldo");
+  const onlyLate = params.has("vencidas");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("");
@@ -18,9 +19,11 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
   const [busy, setBusy] = useState(false);
   const [stamp, setStamp] = useState<string | null>(null);
 
-  const all = queue.data ?? [];
+  // La cola se atiende por urgencia: primero lo vencido, luego lo que vence antes.
+  const all = [...(queue.data ?? [])].sort((a, b) => a.due_at.localeCompare(b.due_at));
   const failedCount = all.filter((r) => r.classifier_failed).length;
-  const items = onlyFailed ? all.filter((r) => r.classifier_failed) : all;
+  const lateCount = all.filter((r) => r.overdue).length;
+  const items = all.filter((r) => (!onlyFailed || r.classifier_failed) && (!onlyLate || r.overdue));
   const selected = items.find((i) => i.id === selectedId) ?? items[0] ?? null;
 
   useEffect(() => {
@@ -78,17 +81,21 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
         <p className="muted">Solicitudes con baja confianza o prioridad alta. Confirma la clasificación o corrígela.</p>
       </header>
       <div className="chips queue-filter" role="group" aria-label="Filtrar la cola">
-        <button className="chip" aria-pressed={!onlyFailed} onClick={() => setParams({})}>
+        <button className="chip" aria-pressed={!onlyFailed && !onlyLate} onClick={() => setParams({})}>
           Todas ({all.length})
         </button>
         <button className="chip" aria-pressed={onlyFailed} onClick={() => setParams({ respaldo: "1" })}>
           Cayeron a respaldo ({failedCount})
         </button>
+        <button className="chip" aria-pressed={onlyLate} onClick={() => setParams({ vencidas: "1" })}>
+          Vencidas ({lateCount})
+        </button>
+        <span className="muted small">Ordenada por vencimiento · plazos: {Object.entries(config.sla_hours).map(([p, h]) => `${p} ${h} h`).join(", ")}</span>
       </div>
       <ErrorNote message={queue.error} />
       {!queue.loading && items.length === 0 && (
         <p className="panel muted">
-          {onlyFailed ? "Ninguna solicitud pendiente cayó a respaldo." : "No hay solicitudes pendientes. Vuelve más tarde."}
+          {onlyFailed || onlyLate ? "Ninguna solicitud pendiente con este filtro." : "No hay solicitudes pendientes. Vuelve más tarde."}
         </p>
       )}
 
@@ -103,6 +110,7 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
                 >
                   <span className="stub">N.º {ticketNo(r.id)}</span>
                   <strong>{r.subject}</strong>
+                  <span className={`due ${r.overdue ? "late" : ""}`}>{dueText(r)}</span>
                   <span className="muted">
                     {formatDate(r.created_at)}
                     {r.classifier_failed && " · el modelo no respondió"}
@@ -113,16 +121,26 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
           </ul>
 
           <section className="panel ticket-sheet" aria-labelledby="detalle">
-            {stamp && (
-              <span className="stamp stamp-drop" role="status">
-                {stamp}
-              </span>
-            )}
-            <p className="sheet-no">Solicitud N.º {ticketNo(selected.id)}</p>
-            <h3 id="detalle">{selected.subject}</h3>
-            <p className="muted">
-              {selected.requester} · {formatDate(selected.created_at)}
-            </p>
+            {/* Cabecera con zona propia para los sellos: no se superponen al texto de la solicitud. */}
+            <div className="sheet-head">
+              <div>
+                <p className="sheet-no">
+                  Solicitud N.º {ticketNo(selected.id)} · <span className={`due ${selected.overdue ? "late" : ""}`}>{dueText(selected)}</span>
+                </p>
+                <h3 id="detalle">{selected.subject}</h3>
+                <p className="muted">
+                  {selected.requester} · {formatDate(selected.created_at)}
+                </p>
+              </div>
+              <div className="sheet-stamps">
+                {selected.overdue && !stamp && <span className="stamp stamp-late">Vencida</span>}
+                {stamp && (
+                  <span className="stamp stamp-drop" role="status">
+                    {stamp}
+                  </span>
+                )}
+              </div>
+            </div>
             <p className="body-text">{selected.body}</p>
 
             <div className="result">

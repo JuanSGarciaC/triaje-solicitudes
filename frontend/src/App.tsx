@@ -35,6 +35,12 @@ export default function App() {
               <span className="nav-count" aria-label={`${config.data.classifier.pending} pendientes`}>
                 {config.data.classifier.pending}
                 {config.data.classifier.failed_pending > 0 && ` · ${config.data.classifier.failed_pending} en respaldo`}
+                {config.data.classifier.overdue > 0 && (
+                  <>
+                    {" · "}
+                    <span className="nav-overdue">{config.data.classifier.overdue} vencidas</span>
+                  </>
+                )}
               </span>
             )}
           </NavLink>

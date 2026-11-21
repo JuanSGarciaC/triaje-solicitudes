@@ -3,7 +3,7 @@ import { api, useLoad } from "../api";
 import { ConfidenceMeter, Detail, ErrorNote, PriorityBadge, StampChain, StatusBadge } from "../components";
 import Flow from "../Flow";
 import TryIt from "../TryIt";
-import { CATEGORY_LABEL, STATUS_LABEL, formatDate, label, reasonCodes, reasonShort, ticketNo } from "../labels";
+import { CATEGORY_LABEL, STATUS_LABEL, dueText, formatDate, label, reasonCodes, reasonShort, ticketNo } from "../labels";
 import type { AppConfig, RequestItem, Status } from "../types";
 
 const FILTERS: (Status | null)[] = [null, "auto_approved", "needs_review", "reviewed"];
@@ -174,6 +174,7 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
                     <span>{label(CATEGORY_LABEL, r.final_category ?? r.pred_category)}</span>
                     <PriorityBadge value={r.final_priority ?? r.pred_priority} />
                     <StatusBadge value={r.status} />
+                    {dueText(r) && <span className={`due ${r.overdue ? "late" : ""}`}>{dueText(r)}</span>}
                   </span>
                   <span className={`reason-line ${codes(r).length ? "to-human" : "to-auto"}`}>
                     {reasonShort(codes(r), r.pred_confidence, r.policy_threshold ?? config.confidence_threshold)}
