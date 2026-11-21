@@ -55,8 +55,9 @@ def test_como_funciona_es_html_estatico_y_no_lo_tapa_el_panel(client):
     page = client.get("/como-funciona")
     assert page.status_code == 200 and "text/html" in page.headers["content-type"]
     # Legible sin JS: el texto de los pasos y las cifras ya vienen en el HTML.
-    assert "Dos condiciones, las dos obligatorias" in page.text and ">90%<" in page.text
-    for asset in ("/como-funciona/landing.css", "/como-funciona/landing.js", "/como-funciona/img/01-bandeja.png"):
+    assert "Seguro, pero no basta" in page.text and ">9/10<" in page.text
+    assert "{{MARCA}}" not in page.text and "<strong>Sello</strong>" in page.text  # marca de settings
+    for asset in ("/como-funciona/landing.css", "/como-funciona/landing.js", "/como-funciona/sello.svg", "/como-funciona/fonts/archivo-latin-wdth-normal.woff2"):
         assert client.get(asset).status_code == 200, asset
     assert client.head("/como-funciona").status_code == 200
 

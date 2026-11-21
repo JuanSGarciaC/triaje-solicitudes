@@ -5,6 +5,8 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API-009688)
 ![React](https://img.shields.io/badge/React-panel-61dafb)
 
+En el panel se presenta como **Sello · triaje de solicitudes de TI** (el nombre vive solo en `BRAND_NAME`).
+
 Aplicación que recibe solicitudes de soporte de TI, las **clasifica con un LLM** (categoría, prioridad, resumen y confianza) y decide si pueden aprobarse solas o deben pasar por una **persona**. Incluye un lienzo que muestra el camino de cada solicitud, cola de revisión, métricas y una evaluación con casos etiquetados.
 
 ![Una solicitud urgente recorre el lienzo: clasificador, política y revisión humana](docs/img/demo-lienzo.gif)
@@ -18,7 +20,8 @@ Aplicación que recibe solicitudes de soporte de TI, las **clasifica con un LLM*
 Qué probar:
 1. **Bandeja**: elige una solicitud de ejemplo, envíala y mira qué rama toma en el lienzo y por qué.
 2. **Umbral**: mueve el control del nodo «Política» para ver cuántas solicitudes cambiarían de rama.
-3. **Por revisar**: confirma o corrige una clasificación; después ábrela desde «Decisión humana» para ver la predicción frente a tu decisión.
+3. **Por revisar**: confirma o corrige una clasificación; después ábrela desde «Decisión humana» para ver la predicción frente a tu decisión y su historial.
+   La primera solicitud de ejemplo simula que el modelo no respondió: el panel lo avisa y desde la cola se puede **Reclasificar**.
 4. **Evaluación**: reglas frente a Gemini sobre los mismos 10 casos.
 
 Límites de la demo:
@@ -62,7 +65,9 @@ React + Vite  ──►  FastAPI  ──►  Clasificador (mock | gemini | anthr
 ```
 
 - **Proveedores:** `mock` (reglas simples, sin costo), `gemini` (Google AI Studio, vía REST con `httpx`) y `anthropic`. Se elige con `LLM_PROVIDER`.
-- **Robustez:** reintentos con espera ante 429/500/503, parada limpia si se agota la cuota, validación estricta de la salida del modelo y degradación segura a revisión humana.
+- **Robustez:** reintentos con espera ante 429/500/503, parada limpia si se agota la cuota, validación estricta de la salida del modelo y degradación segura a revisión humana. Lo que cae a respaldo queda marcado (`classifier_failed`), `/api/config` informa el estado del clasificador, `GET /api/requests?failed=true` lo filtra y `POST /api/requests/{id}/reclassify` lo vuelve a clasificar.
+- **Por qué y cuándo:** cada solicitud guarda el motivo de la política (`model_failed`, `sensitive_priority`, `low_confidence` o `auto`) y el umbral vigente, y un historial que solo crece (`GET /api/requests/{id}/events`).
+- **Migraciones:** Alembic (`backend/migrations`). La API las aplica al arrancar; una base creada antes con `create_all` se marca como `0001` y sigue sin perder datos. Nueva migración: `cd backend; alembic revision --autogenerate -m "..."`.
 - **Entrada idempotente:** `POST /api/requests` acepta la cabecera `Idempotency-Key`. Si quien envía reintenta con la misma clave (por ejemplo el [integrador de webhooks](https://github.com/JuanSGarciaC/integrador-webhooks), que entrega *al menos una vez*), recibe la solicitud original con `200` y no se clasifica de nuevo.
 - **Seguridad:** el texto del usuario se trata como dato (instrucción anti-inyección en el prompt) y las claves viven en `.env`, que no se versiona.
 
