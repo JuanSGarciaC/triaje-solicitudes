@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, useLoad } from "../api";
 import { ConfidenceMeter, ErrorNote, PriorityBadge, Timeline } from "../components";
+import SuggestedReply from "../Reply";
 import { CATEGORY_LABEL, PRIORITY_LABEL, clfLabel, dueText, formatDate, label, ticketNo, why } from "../labels";
 import type { AppConfig } from "../types";
 
@@ -210,6 +211,8 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
                 {changed ? "Guardar corrección" : "Confirmar clasificación"}
               </button>
             </form>
+
+            <SuggestedReply item={selected} />
 
             <h4>Historial</h4>
             <Timeline id={selected.id} />

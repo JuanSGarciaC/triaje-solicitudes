@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { api, useLoad } from "./api";
+import SuggestedReply from "./Reply";
 import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, clfLabel, formatDate, label, pct, ticketNo, why } from "./labels";
 import type { AppConfig, RequestEvent, RequestItem, Status } from "./types";
 
@@ -203,6 +204,8 @@ export function Detail({ item, config, onClose }: { item: RequestItem | null; co
             </p>
           )}
           {item.status === "auto_approved" && <p className="muted">Se aprobó sola: ninguna persona la revisó.</p>}
+
+          <SuggestedReply item={item} />
 
           <h4>Historial</h4>
           <Timeline id={item.id} />
