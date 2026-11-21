@@ -7,7 +7,7 @@ import type { AppConfig, RequestItem, Status } from "../types";
 
 const FILTERS: (Status | null)[] = [null, "auto_approved", "needs_review", "reviewed"];
 
-export default function Inbox({ config }: { config: AppConfig }) {
+export default function Inbox({ config, onChange }: { config: AppConfig; onChange: () => void }) {
   const list = useLoad(() => api.listRequests(), []);
   const [form, setForm] = useState({ subject: "", requester: "", body: "" });
   const [busy, setBusy] = useState(false);
@@ -24,7 +24,9 @@ export default function Inbox({ config }: { config: AppConfig }) {
     setBusy(true);
     setError(null);
     try {
-      setLast(await api.createRequest(data)); // la lista se recarga cuando el punto llega a su rama
+      const created = await api.createRequest(data);
+      setLast(created); // la lista se recarga cuando el punto llega a su rama
+      if (created.classifier_failed !== !config.classifier.healthy) onChange(); // actualiza el aviso del modelo
       setForm({ subject: "", requester: form.requester, body: "" });
       setEx((ex + 1) % Math.max(1, config.examples.length));
     } catch (err) {

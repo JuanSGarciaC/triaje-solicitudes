@@ -213,3 +213,15 @@ tbody th { color: var(--muted); }
   .bars li { grid-template-columns: 110px 1fr 3ch; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- Fase 1: aviso del modelo, historial y reclasificar ---------- */
+.notice { margin-bottom: 1.25rem; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--alta); background: color-mix(in srgb, var(--alta) 8%, transparent); }
+.queue-filter { margin-bottom: 1rem; }
+button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 9px; padding: 0.5rem 0.9rem; font-weight: 600; }
+button.secondary:hover { border-color: var(--ink); }
+.timeline { list-style: none; margin: 0.4rem 0 0; padding: 0 0 0 1rem; border-left: 2px solid var(--line); display: grid; gap: 0.8rem; font-size: 0.92rem; }
+.ev { display: grid; gap: 0.1rem; position: relative; }
+.ev::before { content: ""; position: absolute; left: calc(-1rem - 6px); top: 0.35rem; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.ev-stamp { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.ev-reviewed::before { background: var(--human); }
+.ev.failed::before { background: var(--alta); }

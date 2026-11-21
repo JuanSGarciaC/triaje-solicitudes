@@ -1,11 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api, useLoad } from "../api";
-import { ConfidenceMeter, ErrorNote, PriorityBadge } from "../components";
+import { ConfidenceMeter, ErrorNote, PriorityBadge, Timeline } from "../components";
 import { CATEGORY_LABEL, PRIORITY_LABEL, clfLabel, formatDate, label, why } from "../labels";
 import type { AppConfig } from "../types";
 
-export default function Review({ config }: { config: AppConfig }) {
+export default function Review({ config, onChange }: { config: AppConfig; onChange: () => void }) {
   const queue = useLoad(() => api.listRequests("needs_review"), []);
+  const [params, setParams] = useSearchParams();
+  const onlyFailed = params.has("respaldo");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("");
@@ -14,7 +17,9 @@ export default function Review({ config }: { config: AppConfig }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const items = queue.data ?? [];
+  const all = queue.data ?? [];
+  const failedCount = all.filter((r) => r.classifier_failed).length;
+  const items = onlyFailed ? all.filter((r) => r.classifier_failed) : all;
   const selected = items.find((i) => i.id === selectedId) ?? items[0] ?? null;
 
   useEffect(() => {
@@ -37,6 +42,23 @@ export default function Review({ config }: { config: AppConfig }) {
       await api.review(selected.id, { category, priority, reviewer: config.demo ? "Visitante" : reviewer, note: note || undefined });
       setSelectedId(null);
       queue.reload();
+      onChange();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reclassify() {
+    if (!selected) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.reclassify(selected.id);
+      if (r.status !== "needs_review") setSelectedId(null); // la política la aprobó: sale de la cola
+      queue.reload();
+      onChange();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -50,8 +72,20 @@ export default function Review({ config }: { config: AppConfig }) {
         <h2>Por revisar</h2>
         <p className="muted">Solicitudes con baja confianza o prioridad alta. Confirma la clasificación o corrígela.</p>
       </header>
+      <div className="chips queue-filter" role="group" aria-label="Filtrar la cola">
+        <button className="chip" aria-pressed={!onlyFailed} onClick={() => setParams({})}>
+          Todas ({all.length})
+        </button>
+        <button className="chip" aria-pressed={onlyFailed} onClick={() => setParams({ respaldo: "1" })}>
+          Cayeron a respaldo ({failedCount})
+        </button>
+      </div>
       <ErrorNote message={queue.error} />
-      {!queue.loading && items.length === 0 && <p className="panel muted">No hay solicitudes pendientes. Vuelve más tarde.</p>}
+      {!queue.loading && items.length === 0 && (
+        <p className="panel muted">
+          {onlyFailed ? "Ninguna solicitud pendiente cayó a respaldo." : "No hay solicitudes pendientes. Vuelve más tarde."}
+        </p>
+      )}
 
       {selected && (
         <div className="split review">
@@ -60,7 +94,10 @@ export default function Review({ config }: { config: AppConfig }) {
               <li key={r.id}>
                 <button className={`row-btn ${r.id === selected.id ? "active" : ""}`} onClick={() => setSelectedId(r.id)}>
                   <strong>{r.subject}</strong>
-                  <span className="muted">{formatDate(r.created_at)}</span>
+                  <span className="muted">
+                    {formatDate(r.created_at)}
+                    {r.classifier_failed && " · el modelo no respondió"}
+                  </span>
                 </button>
               </li>
             ))}
@@ -88,6 +125,14 @@ export default function Review({ config }: { config: AppConfig }) {
                   <li key={w}>{w}</li>
                 ))}
               </ul>
+              {selected.classifier_failed && (
+                <p>
+                  <button className="secondary" onClick={reclassify} disabled={busy}>
+                    Reclasificar
+                  </button>{" "}
+                  <span className="muted">Pide otra clasificación al modelo; la política decide de nuevo.</span>
+                </p>
+              )}
             </div>
 
             <form onSubmit={submit} className="form">
@@ -132,6 +177,9 @@ export default function Review({ config }: { config: AppConfig }) {
                 {changed ? "Guardar corrección" : "Confirmar clasificación"}
               </button>
             </form>
+
+            <h4>Historial</h4>
+            <Timeline id={selected.id} />
           </section>
         </div>
       )}

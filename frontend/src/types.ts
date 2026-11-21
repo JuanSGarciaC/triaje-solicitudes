@@ -13,6 +13,9 @@ export interface RequestItem {
   pred_confidence: number;
   pred_reasoning: string;
   classifier_version: string;
+  classifier_failed: boolean;
+  policy_reason: string | null; // "auto" o motivos separados por coma; null en filas anteriores
+  policy_threshold: number | null;
   final_category: string | null;
   final_priority: string | null;
   reviewer: string | null;
@@ -26,7 +29,15 @@ export interface AppConfig {
   priorities: string[];
   always_review_priorities: string[];
   demo: boolean;
+  classifier: { version: string; healthy: boolean; failed_pending: number };
   examples: { subject: string; body: string }[];
+}
+
+export interface RequestEvent {
+  at: string;
+  kind: "received" | "classified" | "decided" | "reviewed";
+  actor: string;
+  detail: Record<string, string | number | boolean | null>;
 }
 
 export interface Metrics {

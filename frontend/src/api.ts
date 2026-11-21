@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AppConfig, EvalReport, Metrics, NewRequest, RequestItem, ReviewPayload, Status } from "./types";
+import type { AppConfig, EvalReport, Metrics, NewRequest, RequestEvent, RequestItem, ReviewPayload, Status } from "./types";
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, { headers: { "Content-Type": "application/json" }, ...init });
@@ -18,6 +18,8 @@ export const api = {
   listRequests: (status?: Status) => http<RequestItem[]>(`/requests?limit=200${status ? `&status=${status}` : ""}`),
   evalReports: () => http<EvalReport[]>("/eval"),
   createRequest: (data: NewRequest) => http<RequestItem>("/requests", { method: "POST", body: JSON.stringify(data) }),
+  events: (id: number) => http<RequestEvent[]>(`/requests/${id}/events`),
+  reclassify: (id: number) => http<RequestItem>(`/requests/${id}/reclassify`, { method: "POST" }),
   review: (id: number, data: ReviewPayload) =>
     http<RequestItem>(`/requests/${id}/review`, { method: "POST", body: JSON.stringify(data) }),
 };

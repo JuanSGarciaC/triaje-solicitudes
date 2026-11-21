@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, clfLabel, formatDate, label, why } from "./labels";
-import type { AppConfig, RequestItem, Status } from "./types";
+import { api, useLoad } from "./api";
+import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, clfLabel, formatDate, label, pct, why } from "./labels";
+import type { AppConfig, RequestEvent, RequestItem, Status } from "./types";
 
 export function ConfidenceMeter({ value, threshold }: { value: number; threshold: number }) {
   const pct = Math.round(value * 100);
@@ -34,6 +35,64 @@ export const ErrorNote = ({ message }: { message: string | null }) =>
       {message}
     </p>
   ) : null;
+
+/** Aviso cuando el modelo falla: lo que cae a respaldo va a revisión humana, pero conviene saberlo. */
+export function ModelNotice({ config }: { config: AppConfig }) {
+  const { healthy, failed_pending: n } = config.classifier;
+  if (healthy && n === 0) return null;
+  return (
+    <div className="notice" role="status">
+      <strong>{healthy ? "El modelo falló antes." : "El clasificador no está respondiendo."}</strong>{" "}
+      {!healthy && "Las solicitudes nuevas pasan a revisión humana con confianza 0. "}
+      {n > 0 && (
+        <>
+          {n === 1 ? "1 solicitud cayó" : `${n} solicitudes cayeron`} a respaldo y espera{n === 1 ? "" : "n"} revisión.{" "}
+          <Link to="/revision?respaldo=1">Ver y reclasificar</Link>
+        </>
+      )}
+    </div>
+  );
+}
+
+const STAMP: Record<RequestEvent["kind"], string> = {
+  received: "Recibida",
+  classified: "Clasificada",
+  decided: "Política",
+  reviewed: "Revisada",
+};
+
+function eventText(e: RequestEvent): string {
+  const d = e.detail;
+  if (e.kind === "received") return `Enviada por ${e.actor}`;
+  if (e.kind === "classified")
+    return d.failed
+      ? "El modelo no respondió: respaldo con confianza 0"
+      : `${label(CATEGORY_LABEL, String(d.category))} · prioridad ${d.priority} · confianza ${pct(Number(d.confidence))} · ${clfLabel(String(d.version))}`;
+  if (e.kind === "decided")
+    return `${STATUS_LABEL[d.status as Status] ?? d.status}${d.threshold != null ? ` · umbral ${pct(Number(d.threshold))}` : ""}`;
+  return `${e.actor} ${d.corrected ? "corrigió" : "confirmó"}: ${label(CATEGORY_LABEL, String(d.category))} · prioridad ${d.priority}`;
+}
+
+/** Historial de la solicitud, del más antiguo al más reciente. */
+export function Timeline({ id }: { id: number }) {
+  const events = useLoad(() => api.events(id), [id]);
+  if (events.error) return <ErrorNote message={events.error} />;
+  if (!events.data) return <p className="muted">Cargando historial…</p>;
+  return (
+    <ol className="timeline">
+      {events.data.map((e, i) => (
+        <li key={i} className={`ev ev-${e.kind}${e.detail.failed ? " failed" : ""}`}>
+          <span className="ev-stamp">{STAMP[e.kind] ?? e.kind}</span>
+          <span>{eventText(e)}</span>
+          <span className="muted">
+            {formatDate(e.at)}
+            {e.detail.backfill ? " · reconstruido a partir de los datos guardados" : ""}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 /** Predicción frente a decisión humana; marca la fila que la persona corrigió. */
 function Compare({ name, pred, final, map }: { name: string; pred: string; final: string | null; map: Record<string, string> }) {
@@ -116,6 +175,9 @@ export function Detail({ item, config, onClose }: { item: RequestItem | null; co
             </p>
           )}
           {item.status === "auto_approved" && <p className="muted">Se aprobó sola: ninguna persona la revisó.</p>}
+
+          <h4>Historial</h4>
+          <Timeline id={item.id} />
         </article>
       )}
     </dialog>

@@ -1,7 +1,7 @@
 import type { PointerEvent } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { api, useLoad } from "./api";
-import { ErrorNote } from "./components";
+import { ErrorNote, ModelNotice } from "./components";
 import { pct } from "./labels";
 import Evaluation from "./pages/Evaluation";
 import Inbox from "./pages/Inbox";
@@ -41,14 +41,15 @@ export default function App() {
         {config.data && <span className="chip">Umbral {pct(config.data.confidence_threshold)}</span>}
       </header>
       <main className="main">
-        {config.loading && <p className="muted">Conectando con el servidor…</p>}
+        {config.loading && !config.data && <p className="muted">Conectando con el servidor…</p>}
+        {config.data && <ModelNotice config={config.data} />}
         <ErrorNote
           message={config.error && "No se pudo conectar con el servidor. Inicia el backend en el puerto 8000 y recarga."}
         />
         {config.data && (
           <Routes>
-            <Route path="/" element={<Inbox config={config.data} />} />
-            <Route path="/revision" element={<Review config={config.data} />} />
+            <Route path="/" element={<Inbox config={config.data} onChange={config.reload} />} />
+            <Route path="/revision" element={<Review config={config.data} onChange={config.reload} />} />
             <Route path="/metricas" element={<Metrics config={config.data} />} />
             <Route path="/evaluacion" element={<Evaluation />} />
           </Routes>
