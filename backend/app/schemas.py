@@ -43,6 +43,24 @@ class RequestOut(BaseModel):
     reviewed_at: datetime | None
 
 
+class PreviewIn(BaseModel):
+    """Texto libre del visitante: se clasifica y se descarta, nunca se guarda."""
+
+    subject: str = Field(default="", max_length=120)
+    body: str = Field(min_length=10, max_length=1000)
+
+
+class PreviewOut(BaseModel):
+    category: str
+    priority: str
+    confidence: float
+    reasons: list[str]  # vacío = se aprobaría sola
+    status: str
+    threshold: float
+    classifier: str
+    rules_fallback: bool  # True si se usó el clasificador de reglas porque el LLM no está disponible
+
+
 class EventOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -205,3 +205,22 @@ html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .js .reveal { opacity: 1; transform: none; }
 }
+
+/* ---------- Prueba tu solicitud ---------- */
+.try-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem, 4vw, 3.5rem); align-items: start; }
+.try-form { display: grid; gap: 0.6rem; margin-top: 1rem; }
+.try-form label { font-weight: 600; }
+.try-form textarea { font: inherit; padding: 0.7rem 0.8rem; border-radius: 4px; border: 1.5px solid var(--line); background: var(--card); color: var(--fg); resize: vertical; }
+.try-row { display: flex; align-items: center; gap: 1rem; }
+.try-form .btn { cursor: pointer; font: inherit; font-weight: 700; }
+.try-form .btn[disabled] { opacity: 0.6; cursor: wait; }
+.try-samples { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.try-samples button { font: 600 0.82rem var(--mono); padding: 0.35rem 0.7rem; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.try-error { color: var(--alta); font-weight: 600; min-height: 1.4em; margin: 0; }
+.js .try-nojs { display: none; }
+.try-empty { border: 2px dashed var(--line); border-radius: 4px; min-height: 13rem; display: grid; place-items: center; padding: 1rem; color: var(--muted); text-align: center; }
+.try-out .ticket { animation: print-out 0.8s var(--ease) both; }
+.try-out .stamp { animation: stamp-in 0.4s cubic-bezier(0.3, 1.5, 0.5, 1) 0.7s both; }
+.try-out .reasons { margin: 0.7rem 0 0; padding-left: 1.1rem; font-size: 0.95rem; }
+.try-out .note { font-size: 0.85rem; color: #5b6170; margin: 0.6rem 0 0; }
+@media (max-width: 767px) { .try-grid { grid-template-columns: 1fr; } }

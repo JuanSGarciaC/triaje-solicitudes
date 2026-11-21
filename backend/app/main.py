@@ -12,13 +12,13 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .classifier import CATEGORIES, PRIORITIES, Classification, fallback, get_classifier
+from .classifier import CATEGORIES, PRIORITIES, Classification, MockClassifier, fallback, get_classifier
 from .config import settings
 from .database import SessionLocal, get_db, migrate
 from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
 from .models import IdempotencyKey, Request, RequestEvent
 from .policy import policy_reasons
-from .schemas import ClassifierStatus, ConfigOut, EventOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
+from .schemas import ClassifierStatus, ConfigOut, EventOut, PreviewIn, PreviewOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ async def lifespan(_: FastAPI):
 
 
 limiter = RateLimiter(settings.demo_rate_per_minute)
+preview_limiter = RateLimiter(settings.preview_rate_per_minute)
 
 
 def apply(item: Request, result: Classification, version: str) -> None:
@@ -154,6 +155,35 @@ def create_request(
         db.execute(delete(Request).where(Request.id.in_(oldest)))
         db.commit()
     return item
+
+
+@app.post("/api/classify/preview", response_model=PreviewOut)
+def classify_preview(payload: PreviewIn, request: HttpRequest):
+    """«Prueba tu solicitud»: clasifica y aplica la política sin guardar nada (ni texto, ni registro).
+    Si el LLM no está configurado o falla, responde el clasificador de reglas y lo avisa."""
+    if not preview_limiter.allow(client_ip(request, settings.client_ip_header)):
+        raise HTTPException(status_code=429, detail="Demasiadas pruebas seguidas. Espera un minuto.")
+    subject = payload.subject.strip() or payload.body.strip()[:60]
+    try:
+        clf = get_classifier()
+    except RuntimeError:  # falta la clave del proveedor: reglas
+        clf = None
+    result = clf.classify(subject, payload.body) if clf else None
+    rules = clf is None or result.failed and not isinstance(clf, MockClassifier)
+    if rules:
+        clf = MockClassifier()
+        result = clf.classify(subject, payload.body)
+    reasons = policy_reasons(result)
+    return PreviewOut(
+        category=result.category,
+        priority=result.priority,
+        confidence=result.confidence,
+        reasons=reasons,
+        status="needs_review" if reasons else "auto_approved",
+        threshold=settings.confidence_threshold,
+        classifier=clf.version,
+        rules_fallback=rules,
+    )
 
 
 @app.get("/api/requests", response_model=list[RequestOut])

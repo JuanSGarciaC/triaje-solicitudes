@@ -271,3 +271,23 @@ tbody th { color: var(--muted); }
   .bars li { grid-template-columns: 110px 1fr 3ch; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- Prueba tu solicitud ---------- */
+.tryit { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem; }
+.samples { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+.small { font-size: 0.82rem; }
+.tryit-out { display: grid; align-items: start; }
+.print-empty { border: 2px dashed var(--line); border-radius: 4px; min-height: 12rem; display: grid; place-items: center; padding: 1rem; text-align: center; }
+.print-ticket {
+  --band: var(--grafito);
+  position: relative; background: #fffdf8; border: 1px solid var(--line); border-left: 6px solid var(--band); border-radius: 3px;
+  padding: 1rem 1.1rem 1.2rem; animation: print-in 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; overflow: hidden;
+}
+.print-ticket.band-alta { --band: var(--alta); } .print-ticket.band-media { --band: var(--media); } .print-ticket.band-baja { --band: var(--baja); }
+@keyframes print-in { from { opacity: 0; transform: translateY(-24px); } }
+.t-head { display: flex; justify-content: space-between; gap: 1rem; margin: 0 0 0.6rem; padding-bottom: 0.45rem; border-bottom: 1px dashed var(--line); font: 600 0.72rem var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.tfields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin: 0 0 0.6rem; }
+.tfields dt { font-size: 0.75rem; color: var(--muted); }
+.tfields dd { margin: 0; font-weight: 700; }
+.stamp-drop-in { margin: 0.4rem 0 0.2rem; font-size: 1.05rem; animation: stamp-in 0.38s cubic-bezier(0.3, 1.5, 0.5, 1) 0.55s both; }
+@media (max-width: 900px) { .tryit { grid-template-columns: 1fr; } }

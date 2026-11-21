@@ -42,6 +42,17 @@ export interface RequestEvent {
   detail: Record<string, string | number | boolean | null>;
 }
 
+export interface Preview {
+  category: string;
+  priority: string;
+  confidence: number;
+  reasons: string[];
+  status: Status;
+  threshold: number;
+  classifier: string;
+  rules_fallback: boolean;
+}
+
 export interface Metrics {
   total: number;
   by_status: Record<string, number>;

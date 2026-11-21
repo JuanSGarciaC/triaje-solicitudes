@@ -117,3 +117,31 @@ def test_historial_de_una_solicitud(client):
     assert events[0]["actor"] == "Ana" and "sensitive_priority" in events[2]["detail"]["reason"].split(",")
     assert events[3]["actor"] == "Bea" and events[3]["detail"]["corrected"] is True
     assert client.get("/api/requests/999999/events").status_code == 404
+
+
+def test_prueba_tu_solicitud_no_guarda_nada_y_tiene_limite(client, monkeypatch):
+    from app import main
+    from app.demo import RateLimiter
+
+    monkeypatch.setattr(main, "preview_limiter", RateLimiter(2))
+    antes = client.get("/api/metrics").json()["total"]
+    r = client.post("/api/classify/preview", json={"body": "La VPN está caída y todos perdieron la conexión, urgente."})
+    assert r.status_code == 200
+    out = r.json()
+    assert out["priority"] == "alta" and "sensitive_priority" in out["reasons"] and out["status"] == "needs_review"
+    assert client.get("/api/metrics").json()["total"] == antes  # no se guardó
+    assert client.post("/api/classify/preview", json={"body": "corto"}).status_code == 422
+    assert client.post("/api/classify/preview", json={"body": "x" * 1001}).status_code == 422
+    client.post("/api/classify/preview", json={"body": "Necesito instalar Excel en mi equipo."})
+    assert client.post("/api/classify/preview", json={"body": "Necesito instalar Excel en mi equipo."}).status_code == 429
+
+
+def test_prueba_tu_solicitud_usa_reglas_si_falta_la_clave(client, monkeypatch):
+    from app import main
+
+    def sin_clave():
+        raise RuntimeError("Falta GOOGLE_API_KEY")
+
+    monkeypatch.setattr(main, "get_classifier", sin_clave)
+    out = client.post("/api/classify/preview", json={"body": "Necesito instalar Excel en mi equipo."}).json()
+    assert out["rules_fallback"] is True and out["classifier"].startswith("mock") and out["status"] == "auto_approved"

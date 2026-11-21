@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { api, useLoad } from "../api";
 import { ConfidenceMeter, Detail, ErrorNote, PriorityBadge, StatusBadge } from "../components";
 import Flow from "../Flow";
+import TryIt from "../TryIt";
 import { CATEGORY_LABEL, STATUS_LABEL, formatDate, label, ticketNo } from "../labels";
 import type { AppConfig, RequestItem, Status } from "../types";
 
@@ -45,6 +46,8 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
         <h2>Bandeja</h2>
         <p className="muted">El modelo clasifica, la política decide y lo dudoso llega a una persona.</p>
       </header>
+
+      <TryIt />
 
       <Flow config={config} items={items} traveling={last} onArrive={list.reload} filter={filter} onFilter={setFilter} />
 

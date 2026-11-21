@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # Demo pública: sin texto libre de visitantes, límite por IP y tope de filas.
     demo_mode: bool = False
     demo_rate_per_minute: int = 10
+    preview_rate_per_minute: int = 6  # «Prueba tu solicitud»: por IP, también fuera de la demo
     demo_max_requests: int = 300
     client_ip_header: str = ""  # en Render: True-Client-IP
     static_dir: str = "../frontend/dist"  # panel compilado; si no existe, la API no lo sirve

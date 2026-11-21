@@ -52,17 +52,32 @@ export function reasonCodes(r: RequestItem, config: AppConfig): string[] {
   return codes;
 }
 
-/** Por qué la política mandó la solicitud a su rama, en frases. */
-export function why(r: RequestItem, config: AppConfig): string[] {
-  const t = pct(r.policy_threshold ?? config.confidence_threshold);
+/** Motivos de la política en frases; sin motivos, por qué se aprobó sola. */
+export function reasonTexts(codes: string[], priority: string, confidence: number, threshold: number): string[] {
+  const t = pct(threshold);
   const text: Record<string, string> = {
     model_failed: "El modelo no respondió o respondió algo inválido: pasa a una persona con confianza 0",
-    sensitive_priority: `Prioridad ${r.pred_priority}: siempre la revisa una persona`,
-    low_confidence: `Confianza ${pct(r.pred_confidence)}, por debajo del umbral de ${t}`,
+    sensitive_priority: `Prioridad ${priority}: siempre la revisa una persona`,
+    low_confidence: `Confianza ${pct(confidence)}, por debajo del umbral de ${t}`,
   };
-  const codes = reasonCodes(r, config);
-  const out = codes.length
+  return codes.length
     ? codes.map((c) => text[c] ?? c)
-    : [`Confianza ${pct(r.pred_confidence)}, sobre el umbral de ${t}, y prioridad ${r.pred_priority}`];
+    : [`Confianza ${pct(confidence)}, sobre el umbral de ${t}, y prioridad ${priority}`];
+}
+
+/** Motivo en una línea, para los tiques de la lista. */
+export function reasonShort(codes: string[], confidence: number, threshold: number): string {
+  if (!codes.length) return `→ sola: ${pct(confidence)} ≥ ${pct(threshold)}`;
+  const short: Record<string, string> = {
+    model_failed: "el modelo no respondió",
+    sensitive_priority: "prioridad alta",
+    low_confidence: `confianza ${pct(confidence)} < ${pct(threshold)}`,
+  };
+  return `→ persona: ${codes.map((c) => short[c] ?? c).join(" y ")}`;
+}
+
+/** Por qué la política mandó la solicitud a su rama, en frases. */
+export function why(r: RequestItem, config: AppConfig): string[] {
+  const out = reasonTexts(reasonCodes(r, config), r.pred_priority, r.pred_confidence, r.policy_threshold ?? config.confidence_threshold);
   return r.policy_reason ? out : [...out, "Motivo recalculado con el umbral actual: esta solicitud es anterior al registro de motivos"];
 }
