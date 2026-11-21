@@ -337,3 +337,24 @@ tbody th { color: var(--muted); }
 .board-card.is-late { box-shadow: inset 0 0 0 1px var(--alta); }
 @media (max-width: 1100px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .board { grid-template-columns: 1fr; } }
+
+/* ---------- Recorrido guiado ---------- */
+.tour-btn { color: var(--tinta); background: var(--media); border-color: var(--media); font-weight: 700; }
+button.tour-btn:hover { color: var(--tinta); filter: brightness(1.08); }
+.tour { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+.tour-spot { position: fixed; border-radius: 8px; box-shadow: 0 0 0 3px var(--media), 0 0 0 9999px rgba(8, 9, 12, 0.6); transition: all 0.3s ease; }
+.tour-bubble {
+  --ink: #1b1d22; --muted: #5b6170; --line: rgba(27, 29, 34, 0.16);
+  position: fixed; width: min(360px, calc(100vw - 24px)); pointer-events: auto; background: var(--papel); color: #1b1d22;
+  border-radius: 6px; border-left: 6px solid var(--media); padding: 1rem 1.1rem; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); transition: top 0.3s ease, left 0.3s ease;
+}
+.tour-bubble:focus { outline: none; }
+.tour-bubble:focus-visible { outline: 2px solid var(--media); }
+.tour-count { margin: 0 0 0.3rem; font: 600 0.72rem var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: #5b6170; }
+.tour-bubble h3 { margin-bottom: 0.3rem; }
+.tour-actions { display: flex; justify-content: flex-end; align-items: center; gap: 0.6rem; margin-top: 0.8rem; }
+.tour-actions .link { margin-right: auto; color: #1b1d22; font-size: 0.9rem; }
+.tour-actions button.secondary, .tour-actions button.primary { padding: 0.45rem 0.9rem; }
+.tour-actions .primary { background: #1b1d22; color: var(--papel); }
+
+@media (max-width: 1440px) { .brand-tag { display: none; } }

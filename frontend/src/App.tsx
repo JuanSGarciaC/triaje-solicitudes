@@ -1,13 +1,13 @@
-import { useEffect } from "react";
-import { NavLink, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Route, Routes, useSearchParams } from "react-router-dom";
 import { api, useLoad } from "./api";
 import { ErrorNote, ModelNotice } from "./components";
-import { pct } from "./labels";
 import Board from "./pages/Board";
 import Evaluation from "./pages/Evaluation";
 import Inbox from "./pages/Inbox";
 import Metrics from "./pages/Metrics";
 import Review from "./pages/Review";
+import Tour, { TOUR_SEEN } from "./Tour";
 
 export default function App() {
   const config = useLoad(api.config, []);
@@ -15,6 +15,12 @@ export default function App() {
   useEffect(() => {
     if (brand) document.title = brand;
   }, [brand]);
+  // ?recorrido=1 (enlace desde /como-funciona) abre el recorrido guiado.
+  const [params, setParams] = useSearchParams();
+  const [tour, setTour] = useState(params.has("recorrido"));
+  useEffect(() => {
+    if (params.has("recorrido")) setParams({}, { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="shell">
@@ -51,8 +57,10 @@ export default function App() {
           {/* Página estática que sirve la API, fuera del router */}
           <a href="/como-funciona">Cómo funciona</a>
         </nav>
+        <button className="chip tour-btn" onClick={() => setTour(true)}>
+          {localStorage.getItem(TOUR_SEEN) ? "Repetir recorrido" : "Ver en 60 s"}
+        </button>
         {config.data?.demo && <span className="chip demo">Demo pública</span>}
-        {config.data && <span className="chip">Umbral {pct(config.data.confidence_threshold)}</span>}
       </header>
       <main className="main">
         {config.loading && !config.data && <p className="muted">Conectando con el servidor…</p>}
@@ -70,6 +78,7 @@ export default function App() {
           </Routes>
         )}
       </main>
+      {tour && config.data && <Tour onClose={() => setTour(false)} />}
     </div>
   );
 }
