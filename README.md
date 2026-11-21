@@ -114,16 +114,16 @@ Modelo `gemini-3.5-flash-lite`, umbral 0.75, corrida del 2026-10-21. Sin fallas 
 | Aprobadas automáticamente | 22/32 | 5/10 |
 | Categoría correcta entre aprobadas | 22/22 | 4/5 |
 
-La pantalla de Evaluación compara, sobre los mismos 10 casos de la prueba final, el LLM con el clasificador de reglas que se usa sin clave (medido el 2026-11-11):
+La pantalla de Evaluación compara, sobre los mismos 10 casos de la prueba final, el LLM con el clasificador de reglas que se usa sin clave (`mock-keywords-v2`, medido el 2026-11-21):
 
 | Prueba final (10 casos) | Gemini | Reglas por palabras clave |
 |---|---|---|
 | Exactitud de categoría | 90% (9/10) | 60% (6/10) |
-| Exactitud de prioridad | 60% (6/10) | 50% (5/10) |
-| Aprobadas automáticamente | 5/10 | 8/10 |
-| Categoría correcta entre aprobadas | 4/5 | 6/8 |
+| Exactitud de prioridad | 60% (6/10) | 70% (7/10) |
+| Aprobadas automáticamente | 5/10 | 6/10 |
+| Categoría correcta entre aprobadas | 4/5 | 4/6 |
 
-Las reglas aprueban más solicitudes solas y se equivocan más en ellas: aprobar más no es mejor.
+Las reglas aprueban más solicitudes solas y se equivocan más en ellas: aprobar más no es mejor. Las reglas mandan siempre a una persona los incidentes de seguridad (ransomware, malware, phishing, robo de equipos…) y las caídas que dejan a varias personas sin trabajar, el mismo criterio del prompt del LLM: un incidente nunca se aprueba solo. Esa versión de las reglas (`mock-keywords-v2`) se ajustó conociendo el conjunto final, así que su cifra en la prueba final es optimista; la de Gemini no se tocó.
 
 ![Evaluación: Gemini frente a reglas por palabras clave en los mismos 10 casos](docs/img/06-evaluacion.png)
 

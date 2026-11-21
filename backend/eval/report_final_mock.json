@@ -1,15 +1,15 @@
 {
-  "date": "2026-11-11 10:25",
-  "classifier": "mock-keywords-v1",
+  "date": "2026-11-21 18:21",
+  "classifier": "mock-keywords-v2",
   "threshold": 0.75,
   "dataset": "eval_final.csv",
   "n": 10,
   "api_failures": 0,
   "invalid": 0,
   "category_ok": 6,
-  "priority_ok": 5,
-  "auto": 8,
-  "auto_ok": 6,
+  "priority_ok": 7,
+  "auto": 6,
+  "auto_ok": 4,
   "confusion": {
     "acceso_cuentas": {
       "acceso_cuentas": 2,
@@ -94,12 +94,6 @@
       "confidence": 0.8
     },
     {
-      "subject": "Se cayó el wifi del piso 3",
-      "expected": "alta",
-      "predicted": "media",
-      "confidence": 0.8
-    },
-    {
       "subject": "Quiero una herramienta de encuestas",
       "expected": "baja",
       "predicted": "media",
@@ -108,12 +102,6 @@
     {
       "subject": "Acceso a carpeta de RRHH",
       "expected": "baja",
-      "predicted": "media",
-      "confidence": 0.8
-    },
-    {
-      "subject": "Laptop robada",
-      "expected": "alta",
       "predicted": "media",
       "confidence": 0.8
     }
