@@ -68,3 +68,40 @@ def test_idempotency_key_no_duplica(client):
     assert (first.status_code, again.status_code, other.status_code) == (201, 200, 201)
     assert again.json()["id"] == first.json()["id"] != other.json()["id"]
     assert again.json()["created_at"] == first.json()["created_at"]
+
+
+def test_guarda_el_motivo_y_reclasifica_un_respaldo(client, monkeypatch):
+    from app import main
+    from app.classifier import fallback
+
+    ok = client.post("/api/requests", json={"subject": "Instalar Excel", "body": "Necesito instalar Excel en mi equipo.", "requester": "Ana"}).json()
+    assert ok["policy_reason"] == "auto" and ok["policy_threshold"] == 0.75 and ok["classifier_failed"] is False
+
+    real = main.get_classifier()
+
+    class Caido:
+        version = real.version
+
+        def classify(self, subject, body):
+            return fallback(subject)
+
+    monkeypatch.setattr(main, "get_classifier", lambda: Caido())
+    down = client.post("/api/requests", json={"subject": "VPN caída", "body": "No conecta la VPN desde casa.", "requester": "Ana"}).json()
+    assert down["status"] == "needs_review" and down["classifier_failed"] and down["policy_reason"] == "model_failed"
+    cfg = client.get("/api/config").json()["classifier"]
+    assert cfg["healthy"] is False and cfg["failed_pending"] >= 1
+    assert down["id"] in [r["id"] for r in client.get("/api/requests?failed=true").json()]
+
+    monkeypatch.setattr(main, "get_classifier", lambda: real)
+    again = client.post(f"/api/requests/{down['id']}/reclassify").json()
+    assert again["classifier_failed"] is False and again["policy_reason"] != "model_failed"
+    assert client.post(f"/api/requests/{ok['id']}/reclassify").status_code == 409
+
+
+def test_motivos_de_la_politica():
+    from app.classifier import Classification, fallback
+    from app.policy import policy_reasons
+
+    assert policy_reasons(Classification("software", "alta", "", 0.5, "")) == ["sensitive_priority", "low_confidence"]
+    assert policy_reasons(Classification("software", "baja", "", 0.9, "")) == []
+    assert policy_reasons(fallback("x")) == ["model_failed"]

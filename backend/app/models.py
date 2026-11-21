@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Float, String, Text
+from sqlalchemy import Boolean, DateTime, Float, String, Text, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -26,6 +26,10 @@ class Request(Base):
     pred_confidence: Mapped[float] = mapped_column(Float)
     pred_reasoning: Mapped[str] = mapped_column(Text)
     classifier_version: Mapped[str] = mapped_column(String(80))
+    classifier_failed: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false(), index=True)
+    # Por qué la política la aprobó o la mandó a revisión, y con qué umbral. None en filas anteriores a 0002.
+    policy_reason: Mapped[str | None] = mapped_column(String(80), default=None)  # "auto" o motivos separados por coma
+    policy_threshold: Mapped[float | None] = mapped_column(Float, default=None)
 
     final_category: Mapped[str | None] = mapped_column(String(40), default=None)
     final_priority: Mapped[str | None] = mapped_column(String(10), default=None)

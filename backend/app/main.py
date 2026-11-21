@@ -12,13 +12,13 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .classifier import CATEGORIES, PRIORITIES, get_classifier
+from .classifier import CATEGORIES, PRIORITIES, Classification, fallback, get_classifier
 from .config import settings
 from .database import SessionLocal, get_db, migrate
 from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
 from .models import IdempotencyKey, Request
-from .policy import decide_status
-from .schemas import ConfigOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
+from .policy import policy_reasons
+from .schemas import ClassifierStatus, ConfigOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
 
 @asynccontextmanager
@@ -33,21 +33,22 @@ async def lifespan(_: FastAPI):
 limiter = RateLimiter(settings.demo_rate_per_minute)
 
 
-def store(db: Session, subject: str, body: str, requester: str, key: str | None = None) -> Request:
+def apply(item: Request, result: Classification, version: str) -> None:
+    """Guarda la predicción y la decisión de la política, con el motivo y el umbral vigente."""
+    reasons = policy_reasons(result)
+    item.pred_category, item.pred_priority = result.category, result.priority
+    item.pred_summary, item.pred_confidence, item.pred_reasoning = result.summary, result.confidence, result.reasoning
+    item.classifier_version, item.classifier_failed = version, result.failed
+    item.policy_reason, item.policy_threshold = ",".join(reasons) or "auto", settings.confidence_threshold
+    item.status = "needs_review" if reasons else "auto_approved"
+
+
+def store(
+    db: Session, subject: str, body: str, requester: str, key: str | None = None, result: Classification | None = None
+) -> Request:
     classifier = get_classifier()
-    result = classifier.classify(subject, body)
-    item = Request(
-        subject=subject,
-        body=body,
-        requester=requester,
-        status=decide_status(result),
-        pred_category=result.category,
-        pred_priority=result.priority,
-        pred_summary=result.summary,
-        pred_confidence=result.confidence,
-        pred_reasoning=result.reasoning,
-        classifier_version=classifier.version,
-    )
+    item = Request(subject=subject, body=body, requester=requester)
+    apply(item, result or classifier.classify(subject, body), classifier.version)
     db.add(item)
     if key:  # misma transacción: o quedan la solicitud y su clave, o ninguna
         db.flush()
@@ -62,8 +63,12 @@ def seed_demo(db: Session) -> None:
     desarrollo, con la mitad de la cola ya revisada y una de cada dos corregida."""
     if db.scalar(select(func.count(Request.id))):
         return
-    stored = [store(db, e["subject"], e["body"], "Laura Ríos (ejemplo)") for e in SEED]
-    queue = [r for r in stored if r.status == "needs_review"]
+    # La primera simula que el modelo no respondió, para que la demo enseñe el aviso y «Reclasificar».
+    stored = [
+        store(db, e["subject"], e["body"], "Laura Ríos (ejemplo)", result=None if i else fallback(e["subject"]))
+        for i, e in enumerate(SEED)
+    ]
+    queue = [r for r in stored if r.status == "needs_review" and not r.classifier_failed]
     for i, r in enumerate(queue[: len(queue) // 2]):
         r.final_category, r.final_priority = r.pred_category, "media" if i % 2 else r.pred_priority
         r.reviewer, r.reviewed_at, r.status = "Camila Torres (ejemplo)", datetime.now(timezone.utc), "reviewed"
@@ -90,8 +95,16 @@ def health():
 
 
 @app.get("/api/config", response_model=ConfigOut)
-def get_config():
+def get_config(db: Session = Depends(get_db)):
+    clf = get_classifier()
+    last_failed = db.scalar(select(Request.classifier_failed).order_by(Request.id.desc()).limit(1))
+    pending = select(func.count(Request.id)).where(Request.status == "needs_review", Request.classifier_failed)
     return ConfigOut(
+        classifier=ClassifierStatus(
+            version=clf.version,
+            healthy=not last_failed and not getattr(clf, "quota_exhausted", False),
+            failed_pending=db.scalar(pending) or 0,
+        ),
         confidence_threshold=settings.confidence_threshold,
         categories=list(CATEGORIES),
         priorities=list(PRIORITIES),
@@ -136,6 +149,7 @@ def create_request(
 @app.get("/api/requests", response_model=list[RequestOut])
 def list_requests(
     status: str | None = Query(default=None, pattern="^(auto_approved|needs_review|reviewed)$"),
+    failed: bool | None = Query(default=None, description="Solo las que cayeron a respaldo (true) o las que no"),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
@@ -143,6 +157,8 @@ def list_requests(
     stmt = select(Request).order_by(Request.created_at.desc(), Request.id.desc()).limit(limit).offset(offset)
     if status:
         stmt = stmt.where(Request.status == status)
+    if failed is not None:
+        stmt = stmt.where(Request.classifier_failed == failed)
     return db.scalars(stmt).all()
 
 
@@ -168,6 +184,21 @@ def review_request(request_id: int, payload: ReviewIn, db: Session = Depends(get
     item.review_note = None if settings.demo_mode else payload.note
     item.reviewed_at = datetime.now(timezone.utc)
     item.status = "reviewed"
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@app.post("/api/requests/{request_id}/reclassify", response_model=RequestOut, dependencies=[Depends(demo_guard)])
+def reclassify_request(request_id: int, db: Session = Depends(get_db)):
+    """Vuelve a clasificar una solicitud pendiente (p. ej. cuando el modelo falló). La política decide otra vez."""
+    item = db.get(Request, request_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="La solicitud no existe.")
+    if item.status != "needs_review":
+        raise HTTPException(status_code=409, detail="Solo se reclasifican solicitudes pendientes de revisión.")
+    classifier = get_classifier()
+    apply(item, classifier.classify(item.subject, item.body), classifier.version)
     db.commit()
     db.refresh(item)
     return item

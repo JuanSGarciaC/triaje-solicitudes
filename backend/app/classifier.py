@@ -27,6 +27,7 @@ class Classification:
     summary: str
     confidence: float
     reasoning: str
+    failed: bool = False  # True si el modelo no respondió o respondió algo inválido
 
 
 class Classifier(Protocol):
@@ -37,7 +38,7 @@ class Classifier(Protocol):
 
 def fallback(subject: str) -> Classification:
     """Resultado seguro si el LLM falla: confianza 0, así que siempre pasa a revisión humana."""
-    return Classification("otro", "media", subject[:140], 0.0, "El clasificador falló; requiere revisión humana.")
+    return Classification("otro", "media", subject[:140], 0.0, "El clasificador falló; requiere revisión humana.", True)
 
 
 # ---------- Mock: reglas simples, solo para desarrollo y pruebas ----------

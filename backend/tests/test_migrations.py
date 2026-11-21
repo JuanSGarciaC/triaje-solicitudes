@@ -48,3 +48,14 @@ def test_base_anterior_a_alembic_conserva_sus_datos(tmp_path):
         assert conn.execute(text("SELECT subject FROM requests")).scalar_one() == "VPN"
         assert "alembic_version" in inspect(conn).get_table_names()
         assert compare_metadata(MigrationContext.configure(conn), Base.metadata) == []
+
+
+def test_0002_marca_los_respaldos_anteriores(tmp_path):
+    eng = legacy_db(tmp_path)
+    with eng.begin() as conn:
+        conn.execute(text("UPDATE requests SET pred_confidence = 0,"
+                          " pred_reasoning = 'El clasificador falló; requiere revisión humana.'"))
+    migrate(eng)
+    with eng.connect() as conn:
+        row = conn.execute(text("SELECT classifier_failed, policy_reason FROM requests")).one()
+    assert row == (1, None)

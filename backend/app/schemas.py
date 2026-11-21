@@ -33,11 +33,20 @@ class RequestOut(BaseModel):
     pred_confidence: float
     pred_reasoning: str
     classifier_version: str
+    classifier_failed: bool
+    policy_reason: str | None
+    policy_threshold: float | None
     final_category: str | None
     final_priority: str | None
     reviewer: str | None
     review_note: str | None
     reviewed_at: datetime | None
+
+
+class ClassifierStatus(BaseModel):
+    version: str
+    healthy: bool  # False si la última clasificación falló o la cuota está agotada
+    failed_pending: int  # solicitudes por revisar que cayeron a respaldo
 
 
 class ConfigOut(BaseModel):
@@ -46,6 +55,7 @@ class ConfigOut(BaseModel):
     priorities: list[str]
     always_review_priorities: list[str]
     demo: bool
+    classifier: ClassifierStatus
     examples: list[dict[str, str]]
 
 
