@@ -1,76 +1,96 @@
-# Triaje de solicitudes con IA y aprobación humana
+# Sello · triaje de solicitudes de TI con IA y aprobación humana
 
 [![CI](https://github.com/JuanSGarciaC/triaje-solicitudes/actions/workflows/ci.yml/badge.svg)](https://github.com/JuanSGarciaC/triaje-solicitudes/actions/workflows/ci.yml)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-API-009688)
 ![React](https://img.shields.io/badge/React-panel-61dafb)
 
-En el panel se presenta como **Sello · triaje de solicitudes de TI** (el nombre vive solo en `BRAND_NAME`).
+**Sello** (repositorio `triaje-solicitudes`) recibe solicitudes de soporte de TI, las **clasifica con un LLM** (categoría, prioridad y confianza) y deja que una **persona ponga el sello** cuando hace falta: una solicitud se aprueba sola **solo si** la confianza supera el umbral (0,75) **y** su prioridad no es alta. Todo lo demás espera revisión, con su motivo a la vista. Después, cada solicitud va al equipo que le toca, con un plazo según su prioridad.
 
-Aplicación que recibe solicitudes de soporte de TI, las **clasifica con un LLM** (categoría, prioridad, resumen y confianza) y decide si pueden aprobarse solas o deben pasar por una **persona**. Incluye un lienzo que muestra el camino de cada solicitud, cola de revisión, métricas y una evaluación con casos etiquetados.
+![Prueba tu solicitud: el tique se imprime y se sella; luego la cola por urgencia y una corrección que estampa CORREGIDA](docs/img/demo-panel.gif)
 
-![Una solicitud urgente recorre el lienzo: clasificador, política y revisión humana](docs/img/demo-lienzo.gif)
-
-*Grabado contra el contenedor local el 2026-11-11 con el clasificador de reglas y datos de ejemplo. El recorrido se dibuja en el navegador con el resultado que ya devolvió la API.*
+*Demo grabada a ritmo real contra la instancia local en modo demo (datos de ejemplo, clasificador de reglas), 2026-11-21.*
 
 ## Demo en vivo
 
-**[triaje-solicitudes-demo.onrender.com](https://triaje-solicitudes-demo.onrender.com)** · API interactiva en [`/docs`](https://triaje-solicitudes-demo.onrender.com/docs) · Presentación en [`/como-funciona`](https://triaje-solicitudes-demo.onrender.com/como-funciona) (HTML estático, se lee sin JS)
+**[triaje-solicitudes-demo.onrender.com](https://triaje-solicitudes-demo.onrender.com)** · presentación en [`/como-funciona`](https://triaje-solicitudes-demo.onrender.com/como-funciona) (HTML estático, se lee sin JS) · API en [`/docs`](https://triaje-solicitudes-demo.onrender.com/docs)
 
-Qué probar (o pulsa **Ver en 60 s** para el recorrido guiado):
-0. **Prueba tu solicitud**: escribe un problema y mira el tique sellado con su motivo. No se guarda nada.
-1. **Bandeja**: elige una solicitud de ejemplo, envíala y mira qué rama toma en el lienzo y por qué. Cada tique dice su motivo en una línea.
-2. **Umbral**: mueve el control del nodo «Política» para ver cuántas solicitudes cambiarían de rama.
-3. **Por revisar**: confirma o corrige una clasificación; después ábrela desde «Decisión humana» para ver la predicción frente a tu decisión y su historial.
-   La primera solicitud de ejemplo simula que el modelo no respondió: el panel lo avisa y desde la cola se puede **Reclasificar**.
-4. **Tablero**: toma y resuelve solicitudes por equipo; los plazos por prioridad marcan lo vencido.
-5. **Métricas**: carga por equipo, tiempos y corrección humana por semana (semanas anteriores sembradas como ejemplo). Descarga las revisiones como casos de evaluación.
-6. **Avisos**: cada cambio de estado genera un webhook firmado; en la demo, simulado y visible en la campana.
-7. **Evaluación**: reglas frente a Gemini sobre los mismos 10 casos.
+Pulsa **Ver en 60 s** para el recorrido guiado, o prueba por tu cuenta:
+1. **Prueba tu solicitud**: escribe un problema y mira el tique sellado con su motivo. No se guarda nada.
+2. **Por revisar**: la cola va por urgencia; corrige una clasificación y cae el sello. La primera solicitud de ejemplo simula que el modelo no respondió: **Reclasificar**.
+3. **Tablero**: toma y resuelve solicitudes por equipo.
+4. **Métricas**, **Avisos** (campana) y **Evaluación**: reglas frente a Gemini sobre los mismos 10 casos.
 
 Límites de la demo:
-- Usa el clasificador de reglas, sin LLM ni claves.
-- «Prueba tu solicitud» acepta texto libre pero no lo guarda: clasifica y descarta (10-1000 caracteres, 6 pruebas por minuto por IP).
-- No acepta texto libre que se guarde: solo se envían los 42 ejemplos del conjunto de evaluación, y las revisiones se guardan como «Visitante», sin nota. Así ningún visitante ve texto escrito por otro. La API lo exige, no solo el panel.
-- Cada IP puede hacer 10 envíos o revisiones por minuto y se guardan como máximo 300 solicitudes (se borran las más antiguas).
-- Hosting gratuito: el servicio se duerme tras 15 minutos sin visitas, el primer acceso tarda cerca de un minuto y los datos vuelven a los de ejemplo.
+- Usa el clasificador de reglas, sin LLM ni claves (acierta la categoría 6 de 10 veces; Gemini, 9 de 10).
+- «Prueba tu solicitud» acepta texto libre pero no lo guarda: lo clasifica y lo descarta (10-1000 caracteres, 6 pruebas por minuto por IP).
+- Lo que sí se guarda son los 42 ejemplos del conjunto de evaluación; revisiones y trabajo quedan como «Visitante», sin nota. Así ningún visitante ve texto escrito por otro. La API lo exige, no solo el panel.
+- 10 envíos, revisiones o cambios por minuto por IP y como máximo 300 solicitudes (se borran las más antiguas).
+- Los avisos son simulados (no salen del servidor) y las semanas anteriores de Métricas son datos sembrados de ejemplo.
+- Hosting gratuito: se duerme tras 15 minutos sin visitas, el primer acceso tarda cerca de un minuto y los datos vuelven a los de ejemplo.
 
 Se despliega con el blueprint [`render.yaml`](render.yaml) (`DEMO_MODE=true`).
 
-## Qué resuelve
+## Las 8 funciones
 
-Un LLM puede equivocarse con total seguridad. Este proyecto no lo deja decidir solo: una solicitud se aprueba automáticamente **solo si** la confianza supera el umbral (0.75 por defecto) **y** su prioridad no es alta. Todo lo demás va a la cola de revisión, donde una persona confirma o corrige. Si el modelo falla o responde algo inválido, el caso también va a revisión (confianza 0).
+| | Qué resuelve | Qué ves |
+|---|---|---|
+| **Prueba tu solicitud** | Ver cómo decide sin guardar nada | El tique se imprime con categoría, prioridad, confianza, la regla que disparó y su sello |
+| **El motivo a la vista** | Saber por qué cada solicitud fue a una persona | «→ persona: prioridad alta» en cada tique, la cadena de sellos, filtro por motivo y Reclasificar en la fila |
+| **Vencimientos** | Atender primero lo urgente | Plazo por prioridad (alta 4 h, media 24 h, baja 72 h), sello VENCIDA y la cola ordenada por urgencia |
+| **Tablero por equipo** | El trabajo sigue después del triaje | Por revisar / Abierta / En curso / Resuelta, ruteo de categoría a equipo, Tomar y Resolver |
+| **Recorrido «Ver en 60 s»** | Entenderlo sin leer nada | Seis pasos sobre la interfaz real |
+| **Métricas de la mesa** | Ver carga y calidad | Carga por equipo, tiempos, resueltas en plazo, corrección humana por semana y CSV de revisiones |
+| **Avisos firmados** | Que quien pidió ayuda se entere | Webhook con firma HMAC-SHA256 en cada cambio de estado; en la demo, simulado y visible en la campana |
+| **Respuesta sugerida** | La primera respuesta, sin reescribirla | Plantilla fija por categoría con el número, el equipo y el plazo, lista para copiar |
 
-## El panel
-
-**Bandeja.** El lienzo resume el flujo con los conteos reales: cada rama es más gruesa y se mueve más rápido cuantas más solicitudes pasaron por ella, y una rama sin datos no se mueve. Al hacer clic en una rama se filtra la lista.
-
-![Bandeja con el lienzo de decisión](docs/img/01-bandeja.png)
-
-**Umbral simulado.** Mover el umbral recalcula en el navegador cuántas solicitudes cambiarían de rama. No guarda nada: sirve para ver el costo de automatizar más.
-
-![Con umbral 90 %, 13 solicitudes más pasarían a revisión humana](docs/img/02-umbral-simulado.png)
-
-| Detalle: predicción frente a decisión humana | Por revisar |
+| Prueba tu solicitud | Cada tique explica su sello |
 |---|---|
-| ![Detalle de una solicitud corregida por una persona](docs/img/03-detalle.png) | ![Cola de revisión con el motivo por el que llegó cada solicitud](docs/img/04-revision.png) |
-| **Métricas** | **Evaluación** |
-| ![Métricas: quién decidió y solicitudes por categoría](docs/img/05-metricas.png) | ![Evaluación: reglas frente a Gemini, matriz de confusión y errores](docs/img/06-evaluacion.png) |
+| ![El tique sale sellado con su motivo, sin guardarse](docs/img/08-prueba-tu-solicitud.png) | ![Tiques de la bandeja con el motivo en una línea y la cadena de sellos](docs/img/09-tiques-con-motivo.png) |
 
-| **Tablero por equipo** | **Prueba tu solicitud** |
+![Cola por revisar: lo vencido primero, el motivo de cada caso y el botón Reclasificar](docs/img/04-revision.png)
+
+![Tablero por equipo: por revisar, abierta, en curso y resuelta, con plazos por prioridad](docs/img/07-tablero.png)
+
+![Métricas de la mesa: carga por equipo, tiempos y corrección humana por semana](docs/img/05-metricas.png)
+
+| Detalle con respuesta sugerida | En el móvil |
 |---|---|
-| ![Tablero: por revisar, abierta, en curso y resuelta, con plazos por prioridad](docs/img/07-tablero.png) | ![Prueba tu solicitud: el tique sale sellado con su motivo, sin guardarse](docs/img/08-prueba-tu-solicitud.png) |
+| ![Detalle: predicción frente a decisión humana, motivo de la política y respuesta sugerida](docs/img/03-detalle.png) | ![Cola por revisar en un móvil de 390 px](docs/img/11-movil-revision.png) |
 
-Sin librerías de UI ni de gráficos: SVG y CSS a mano. El estado se comunica con texto además de color, el foco es visible y las animaciones se apagan con `prefers-reduced-motion`. Capturas y GIF se regeneran con `scripts/capturas.py`.
+**El lienzo.** Resume el flujo con los conteos reales; cada rama es más gruesa cuantas más solicitudes pasaron por ella. Mover el umbral recalcula en el navegador cuántas cambiarían de rama, sin guardar nada.
+
+| Lienzo de decisión | Umbral simulado al 90 % |
+|---|---|
+| ![Lienzo: solicitud, clasificador, política, aprobada sola o revisión humana](docs/img/01-bandeja.png) | ![Con umbral 90 %, 13 solicitudes más pasarían a revisión humana](docs/img/02-umbral-simulado.png) |
+
+## Identidad: «Ventanilla»
+
+Cada solicitud es un **tique de papel** que va recibiendo **sellos**: clasificada, revisión humana, corregida, resuelta. La paleta «kraft y tampón» vive en un solo archivo ([`tokens.css`](backend/app/landing/tokens.css)) que comparten el panel y la presentación:
+
+- Escritorio de cartón kraft y tiques de papel claro de la misma familia; se separan por borde y sombra, no por brillo.
+- Prioridad en tintas de tampón desaturadas: oxblood (alta), mostaza (media) y pizarra (baja), en franja, borde, texto y sello. El color nunca va solo: el texto lo nombra.
+- El índigo es solo de la persona: discontinuo = espera a alguien; lleno = una persona lo selló. Grafito = lo aprobó la política sola.
+- Archivo, IBM Plex Mono y Public Sans, servidas desde la propia app (sin CDN). Contraste AA en todos los pares de texto.
+
+La presentación [`/como-funciona`](https://triaje-solicitudes-demo.onrender.com/como-funciona) cuenta tres casos reales de punta a punta: el tique queda fijo y recibe los sellos al bajar.
+
+![Presentación: el tique fijo recibe los sellos Revisión humana y Corregida al hacer scroll](docs/img/demo-landing.gif)
+
+![Portada de la presentación: «La IA clasifica. Una persona pone el sello.»](docs/img/10-landing.png)
+
+Sin librerías de UI ni de gráficos: SVG y CSS a mano. Foco visible, `prefers-reduced-motion` respetado y la presentación legible sin JavaScript. Capturas y demos se regeneran con [`scripts/capturas.py`](scripts/capturas.py) (Playwright y Edge, 1440×900 a 2x).
 
 ## Arquitectura
 
 ```
 React + Vite  ──►  FastAPI  ──►  Clasificador (mock | gemini | anthropic)
  (Bandeja,          │
-  Por revisar,      ├─ policy.py: decide auto_approved / needs_review
-  Métricas,         ├─ SQLite (solicitudes y decisiones humanas)
+  Por revisar,      ├─ policy.py: decide y guarda el motivo (auto | revisión humana)
+  Tablero,          ├─ SQLite + Alembic: solicitudes, historial, trabajo, avisos
+  Métricas,         ├─ notify.py: webhook firmado (o simulado en la demo)
   Evaluación)       └─ eval/report_*.json (reportes guardados, GET /api/eval)
+/como-funciona  ◄──  HTML estático servido por la API (landing/, tokens.css compartido)
 ```
 
 - **Proveedores:** `mock` (reglas simples, sin costo), `gemini` (Google AI Studio, vía REST con `httpx`) y `anthropic`. Se elige con `LLM_PROVIDER`.
@@ -105,7 +125,11 @@ La pantalla de Evaluación compara, sobre los mismos 10 casos de la prueba final
 
 Las reglas aprueban más solicitudes solas y se equivocan más en ellas: aprobar más no es mejor.
 
+![Evaluación: Gemini frente a reglas por palabras clave en los mismos 10 casos](docs/img/06-evaluacion.png)
+
 **Limitaciones**
+- Todavía no hay inicio de sesión: el nombre de quien revisa o resuelve es texto libre.
+- Los avisos se envían una sola vez, sin reintentos ni cola.
 - Las muestras son pequeñas: un caso equivale a 3 puntos (desarrollo) o 10 (final).
 - El prompt se ajustó con el set de desarrollo, por eso su cifra es optimista. La prueba final se ejecutó una sola vez, sin ajustes posteriores.
 - Los errores de prioridad son sobre todo por exceso (el modelo sube la prioridad), lo que deriva el caso a revisión humana.
@@ -171,23 +195,23 @@ El reporte incluye exactitud de categoría y prioridad, matriz de confusión y l
 
 ## Pruebas y CI
 
-| Qué | Cómo | Resultado (2026-11-11, local) |
+| Qué | Cómo | Resultado (2026-11-21, local) |
 |---|---|---|
-| Unitarias e integración de la API (incluye el modo demo) | `pytest` en `backend/` | 25 pasan |
-| E2E en navegador contra el contenedor | `uv run --with pytest --with playwright pytest e2e` | 4 pasan |
+| Unitarias e integración de la API (modo demo, migraciones 0001-0005, avisos firmados, plazos, tablero) | `pytest` en `backend/` | 39 pasan |
+| E2E en navegador | `uv run --with pytest --with playwright pytest e2e` | 5 pasan |
 | Linter | `ruff check` | sin hallazgos |
 | Compilación del panel | `npm run build` (incluye `tsc`) | sin errores |
 
-Las E2E envían solicitudes reales, comprueban la rama que toman, corrigen una desde la cola de revisión y verifican que la corrección aparece en el detalle. GitHub Actions ejecuta todo en cada push.
+Las E2E envían solicitudes reales, comprueban la rama que toman, corrigen una desde la cola de revisión, verifican que la corrección aparece en el detalle y que «Prueba tu solicitud» sella sin guardar. En local corren con Edge contra `uvicorn` (`BASE_URL`, `BROWSER_CHANNEL=msedge`); en CI, contra el contenedor. La interfaz se revisa además con Playwright en escritorio, 390 px, sin JS y con `prefers-reduced-motion`. GitHub Actions ejecuta todo en cada push.
 
 ## Estructura
 
 ```
-backend/   app/ (main, classifier, policy, models)  eval/  scripts/  tests/
-frontend/  src/ (Flow: lienzo; pages: Inbox, Review, Metrics, Evaluation)
-e2e/       pruebas en navegador contra el contenedor
-scripts/   capturas.py (capturas y GIF del README)
-docs/      img/ (capturas)  superpowers/specs/ (diseño del rediseño)
+backend/   app/ (main, classifier, policy, models, notify, landing/)  migrations/  eval/  scripts/  tests/
+frontend/  src/ (Flow: lienzo; TryIt; Tour; Notices; Reply; pages: Inbox, Review, Board, Metrics, Evaluation)
+e2e/       pruebas en navegador
+scripts/   capturas.py (capturas y demos animadas del README)
+docs/      img/ (capturas y GIF)  superpowers/specs/ (diseño del rediseño)
 ```
 
 ## Cómo se construyó
