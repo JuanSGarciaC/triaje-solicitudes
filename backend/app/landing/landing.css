@@ -6,19 +6,19 @@
 @font-face { font-family: "IBM Plex Mono"; src: url(/como-funciona/fonts/ibm-plex-mono-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
 
 :root {
-  --tinta: #14161c; --papel: #f4efe6; --papel-2: #ebe4d7; --papel-ink: #1b1d22;
-  --alta: #d7263d; --media: #f2a900; --baja: #2e9e5b; --persona: #2b4c9b; --grafito: #4a4f5c;
+  /* La paleta vive en tokens.css (compartida con el panel); aquí solo el papel del texto. */
+  --papel-ink: var(--papel-texto);
   --display: "Archivo", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   /* tono por defecto: tinta */
-  --bg: var(--tinta); --fg: #f1ece2; --muted: #a3a7b3; --line: rgba(241, 236, 226, 0.16); --card: rgba(241, 236, 226, 0.05);
+  --bg: var(--tinta); --fg: var(--tinta-texto); --muted: var(--tinta-gris); --line: var(--tinta-linea); --card: var(--tinta-suave);
 }
 /* C13: sin JS cada sección lleva su tono; con JS (html.c13) el tono lo lleva el body y cambia al pasar de sección. */
 html:not(.c13) [data-tone="papel"], html.c13 body[data-tone="papel"] {
-  --bg: var(--papel); --fg: var(--papel-ink); --muted: #5b6170; --line: rgba(27, 29, 34, 0.16); --card: #fffdf8;
+  --bg: var(--papel); --fg: var(--papel-ink); --muted: var(--papel-gris); --line: var(--papel-linea); --card: var(--papel-claro);
 }
 html:not(.c13) [data-tone="tinta"], html.c13 body[data-tone="tinta"] {
-  --bg: var(--tinta); --fg: #f1ece2; --muted: #a3a7b3; --line: rgba(241, 236, 226, 0.16); --card: rgba(241, 236, 226, 0.05);
+  --bg: var(--tinta); --fg: var(--tinta-texto); --muted: var(--tinta-gris); --line: var(--tinta-linea); --card: var(--tinta-suave);
 }
 html:not(.c13) [data-tone] { background: var(--bg); color: var(--fg); }
 html.c13 body { transition: background-color 0.6s var(--ease), color 0.6s var(--ease); }
@@ -41,16 +41,16 @@ a { color: inherit; text-underline-offset: 3px; }
 /* ---------- Cabecera ---------- */
 .top {
   position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  padding: 0.7rem clamp(1rem, 4vw, 2rem); background: rgba(20, 22, 28, 0.94); color: #f1ece2; border-bottom: 1px solid rgba(241, 236, 226, 0.12);
+  padding: 0.7rem clamp(1rem, 4vw, 2rem); background: var(--barra); color: var(--tinta-texto); border-bottom: 1px solid var(--tinta-linea);
 }
 .brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: inherit; }
-.brand img { background: var(--papel); border-radius: 50%; padding: 2px; }
+.brand img { background: var(--papel-claro); border-radius: 50%; padding: 2px; }
 .brand > span { display: grid; line-height: 1.15; }
 .brand strong { font: 800 1.2rem var(--display); font-stretch: 115%; }
-.brand small { font-size: 0.74rem; color: #a3a7b3; }
+.brand small { font-size: 0.74rem; color: var(--tinta-gris); }
 .top nav { display: flex; gap: 0.25rem; }
-.top nav a { padding: 0.45rem 0.9rem; border-radius: 999px; color: #a3a7b3; text-decoration: none; font-weight: 500; font-size: 0.92rem; }
-.top nav a:hover { color: #f1ece2; background: rgba(241, 236, 226, 0.08); }
+.top nav a { padding: 0.45rem 0.9rem; border-radius: 999px; color: var(--tinta-gris); text-decoration: none; font-weight: 500; font-size: 0.92rem; }
+.top nav a:hover { color: var(--tinta-texto); background: var(--tinta-suave); }
 
 main > section { padding: clamp(3.5rem, 9vw, 7rem) max(clamp(1rem, 4vw, 2rem), calc((100% - 1180px) / 2)); }
 
@@ -63,8 +63,7 @@ main > section { padding: clamp(3.5rem, 9vw, 7rem) max(clamp(1rem, 4vw, 2rem), c
 .lead-2 { font-size: 1.15rem; max-width: 68ch; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.6rem; }
 .btn { display: inline-block; padding: 0.75rem 1.3rem; border-radius: 4px; text-decoration: none; font-weight: 700; border: 1.5px solid currentColor; }
-.btn.primary { background: var(--papel); color: var(--tinta); border-color: var(--papel); }
-html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"] .btn.primary { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+.btn.primary { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); }
 .btn:hover { filter: brightness(1.1); text-decoration: underline; }
 
 /* B1: el titular entra palabra por palabra (las palabras las parte landing.js). */
@@ -73,7 +72,7 @@ html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"
 
 /* A3: el tique sale de la ranura de la impresora (solo transform, recortado por la ranura). */
 .printer { position: relative; justify-self: center; width: min(100%, 360px); }
-.slot { height: 14px; border-radius: 7px; background: #0a0b0e; box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(241, 236, 226, 0.12); }
+.slot { height: 14px; border-radius: 7px; background: color-mix(in srgb, var(--tinta) 35%, #000); box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.8), 0 1px 0 var(--tinta-linea); }
 .paper-out { overflow: hidden; margin: -7px 14px 0; padding-bottom: 24px; }
 .paper-out .ticket { animation: print-out 1.4s var(--ease) 0.5s both; }
 @keyframes print-out { from { transform: translateY(-104%); } }
@@ -82,33 +81,33 @@ html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"
 /* ---------- Tique ---------- */
 .ticket {
   position: relative; background: var(--papel); color: var(--papel-ink); border-radius: 4px; padding: 1.1rem 1.2rem 1.3rem;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35); border-left: 6px solid var(--grafito);
+  box-shadow: var(--sombra); border-left: 6px solid var(--grafito);
   /* borde de corte abajo */
   -webkit-mask: radial-gradient(7px at 50% 100%, #0000 98%, #000) 50% / 18px 100% repeat-x;
           mask: radial-gradient(7px at 50% 100%, #0000 98%, #000) 50% / 18px 100% repeat-x;
 }
-.t-head { display: flex; justify-content: space-between; gap: 1rem; margin: 0 0 0.7rem; padding-bottom: 0.5rem; border-bottom: 1px dashed rgba(27, 29, 34, 0.3); font: 600 0.75rem var(--mono); letter-spacing: 0.06em; color: #5b6170; text-transform: uppercase; }
+.t-head { display: flex; justify-content: space-between; gap: 1rem; margin: 0 0 0.7rem; padding-bottom: 0.5rem; border-bottom: 1px dashed var(--papel-linea); font: 600 0.75rem var(--mono); letter-spacing: 0.06em; color: var(--papel-gris); text-transform: uppercase; }
 .ticket.mini, .ticket.band-media { border-left-color: var(--media); }
 .ticket.band-alta { border-left-color: var(--alta); }
 .subject { font-weight: 700; margin: 0 0 0.3rem; }
-.body { margin: 0; color: #3b3f48; }
-.layer { padding: 0.9rem 1rem; border-radius: 3px; border: 1px solid rgba(27, 29, 34, 0.16); }
+.body { margin: 0; color: var(--papel-texto); }
+.layer { padding: 0.9rem 1rem; border-radius: 3px; border: 1px solid var(--papel-linea); }
 .layer + .layer { margin-top: 0.7rem; }
-.raw { background: #fffdf8; }
-.clf { background: #e6ecf7; border-color: rgba(43, 76, 155, 0.35); }
-.clf.failed { background: #f9e3e5; border-color: rgba(215, 38, 61, 0.4); }
-.layer-tag { margin: 0 0 0.3rem; font: 600 0.7rem var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: #5b6170; }
-.fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.3rem 0.8rem; margin: 0.7rem 0 0; padding-top: 0.6rem; border-top: 1px solid rgba(27, 29, 34, 0.14); }
-.fields dt { font-size: 0.75rem; color: #5b6170; }
+.raw { background: var(--papel-claro); }
+.clf { background: var(--clf-bg); border-color: color-mix(in srgb, var(--persona) 35%, transparent); }
+.clf.failed { background: var(--fallo-bg); border-color: color-mix(in srgb, var(--alta) 40%, transparent); }
+.layer-tag { margin: 0 0 0.3rem; font: 600 0.7rem var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--papel-gris); }
+.fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.3rem 0.8rem; margin: 0.7rem 0 0; padding-top: 0.6rem; border-top: 1px solid var(--papel-linea); }
+.fields dt { font-size: 0.75rem; color: var(--papel-gris); }
 .fields dd { margin: 0; font: 600 0.95rem var(--mono); }
-.fields.empty dd { color: #8a8f9b; }
+.fields.empty dd { color: var(--papel-tenue); }
 .compare:not(.on) .dup { display: none; }
 .prio { display: inline-block; padding: 0 0.45rem; border-radius: 3px; font: 600 0.78rem/1.6 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; }
-.prio.alta { background: var(--alta); color: #fff; }
-.prio.media { background: var(--media); color: var(--tinta); }
-.prio.baja { background: var(--baja); color: var(--tinta); }
+.prio.alta { background: var(--badge-alta-bg); color: var(--badge-alta-fg); box-shadow: inset 0 0 0 1px var(--alta); }
+.prio.media { background: var(--badge-media-bg); color: var(--badge-media-fg); box-shadow: inset 0 0 0 1px var(--media); }
+.prio.baja { background: var(--badge-baja-bg); color: var(--badge-baja-fg); box-shadow: inset 0 0 0 1px var(--baja); }
 .checks { list-style: none; padding: 0; margin: 0.9rem 0 0; display: grid; gap: 0.3rem; font-size: 0.93rem; }
-.checks li { padding: 0.35rem 0.65rem; border-radius: 3px; background: rgba(27, 29, 34, 0.05); }
+.checks li { padding: 0.35rem 0.65rem; border-radius: 3px; background: var(--papel-suave); }
 .checks .ok::first-letter { color: var(--baja); }
 .checks .no::first-letter { color: var(--alta); }
 .stamps { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; margin-top: 1rem; min-height: 2.6rem; }
@@ -117,9 +116,9 @@ html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"
 .stamp { display: inline-block; font: 600 0.88rem var(--mono); text-transform: uppercase; letter-spacing: 0.12em; padding: 0.3rem 0.75rem; border: 3px double currentColor; border-radius: 5px; transform: rotate(-6deg); }
 .st-auto { color: var(--grafito); }
 .st-review { color: var(--persona); border: 2px dashed currentColor; }
-.st-person { color: #fff; background: var(--persona); border-color: var(--persona); box-shadow: inset 0 0 0 2px var(--persona), inset 0 0 0 3px #fff; }
+.st-person { color: var(--sobre-persona); background: var(--persona); border-color: var(--persona); box-shadow: inset 0 0 0 2px var(--persona), inset 0 0 0 3px var(--sobre-persona); }
 .st-fail { color: var(--alta); }
-.st-empty { color: #8a8f9b; border-style: dotted; border-width: 2px; transform: rotate(2deg); }
+.st-empty { color: var(--papel-tenue); border-style: dotted; border-width: 2px; transform: rotate(2deg); }
 @keyframes stamp-in { from { opacity: 0; transform: rotate(-1deg) scale(1.9); } }
 
 /* H4: comparación cruda / clasificada (la activa landing.js). */
@@ -139,7 +138,7 @@ html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"
 /* ---------- C4: casos con el tique fijo ---------- */
 .tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.6rem 0 0.5rem; }
 .tabs button { font: 600 0.92rem var(--mono); padding: 0.55rem 1rem; border-radius: 4px; border: 1.5px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
-.tabs button[aria-pressed="true"] { background: var(--papel); color: var(--tinta); border-color: var(--papel); }
+.tabs button[aria-pressed="true"] { background: var(--activo); color: var(--activo-texto); border-color: var(--activo); }
 .case { margin-top: 2.5rem; }
 .case-title { font-size: 1.35rem; }
 .case-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(1.5rem, 4vw, 4rem); margin-top: 1rem; }
@@ -224,7 +223,7 @@ html:not(.c13) [data-tone="papel"] .btn.primary, html.c13 body[data-tone="papel"
 .try-out .ticket { animation: print-out 0.8s var(--ease) both; }
 .try-out .stamp { animation: stamp-in 0.4s cubic-bezier(0.3, 1.5, 0.5, 1) 0.7s both; }
 .try-out .reasons { margin: 0.7rem 0 0; padding-left: 1.1rem; font-size: 0.95rem; }
-.try-out .note { font-size: 0.85rem; color: #5b6170; margin: 0.6rem 0 0; }
+.try-out .note { font-size: 0.85rem; color: var(--papel-gris); margin: 0.6rem 0 0; }
 @media (max-width: 767px) { .try-grid { grid-template-columns: 1fr; } }
 
 .link-card { display: block; text-decoration: none; color: inherit; transition: transform 0.2s var(--ease), border-color 0.2s; }
