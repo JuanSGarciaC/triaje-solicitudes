@@ -3,6 +3,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { api, useLoad } from "./api";
 import { ErrorNote, ModelNotice } from "./components";
 import { pct } from "./labels";
+import Board from "./pages/Board";
 import Evaluation from "./pages/Evaluation";
 import Inbox from "./pages/Inbox";
 import Metrics from "./pages/Metrics";
@@ -35,13 +36,14 @@ export default function App() {
               <span className="nav-count" aria-label={`${config.data.classifier.pending} pendientes`}>
                 {config.data.classifier.pending}
                 {config.data.classifier.failed_pending > 0 && ` · ${config.data.classifier.failed_pending} en respaldo`}
-                {config.data.classifier.overdue > 0 && (
-                  <>
-                    {" · "}
-                    <span className="nav-overdue">{config.data.classifier.overdue} vencidas</span>
-                  </>
-                )}
+
               </span>
+            )}
+          </NavLink>
+          <NavLink to="/tablero">
+            Tablero{" "}
+            {config.data && config.data.classifier.overdue > 0 && (
+              <span className="nav-count late">{config.data.classifier.overdue} vencidas</span>
             )}
           </NavLink>
           <NavLink to="/metricas">Métricas</NavLink>
@@ -62,6 +64,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Inbox config={config.data} onChange={config.reload} />} />
             <Route path="/revision" element={<Review config={config.data} onChange={config.reload} />} />
+            <Route path="/tablero" element={<Board config={config.data} onChange={config.reload} />} />
             <Route path="/metricas" element={<Metrics config={config.data} />} />
             <Route path="/evaluacion" element={<Evaluation />} />
           </Routes>

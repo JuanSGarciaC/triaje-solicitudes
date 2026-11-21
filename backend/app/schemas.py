@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from .classifier import Category, Priority
@@ -43,6 +45,15 @@ class RequestOut(BaseModel):
     reviewed_at: datetime | None
     due_at: datetime
     overdue: bool
+    work_state: str
+    team: str
+    assignee: str | None
+    resolved_at: datetime | None
+
+
+class WorkIn(BaseModel):
+    action: Literal["take", "resolve"]
+    actor: str = Field(min_length=2, max_length=120)
 
 
 class PreviewIn(BaseModel):
@@ -89,6 +100,7 @@ class ConfigOut(BaseModel):
     always_review_priorities: list[str]
     demo: bool
     sla_hours: dict[str, float]
+    teams: list[str]
     classifier: ClassifierStatus
     examples: list[dict[str, str]]
 

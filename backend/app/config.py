@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     llm_model: str = "claude-haiku-5-5"  # verifica el nombre vigente en la documentación del proveedor
     confidence_threshold: float = 0.75
     sla_hours: str = "alta=4,media=24,baja=72"  # plazo para resolver, según la prioridad vigente
+    # Ruteo: equipo que atiende cada categoría (la vigente, así que una corrección cambia de equipo).
+    team_routes: str = (
+        "acceso_cuentas=Accesos,hardware=Equipos,software=Software,red_conectividad=Redes,"
+        "nuevo_servicio=Servicios,otro=Mesa general"
+    )
     always_review_priorities: str = "alta"  # prioridades que SIEMPRE pasan por una persona
     cors_origins: str = "http://localhost:5173"
     # Demo pública: sin texto libre de visitantes, límite por IP y tope de filas.

@@ -16,9 +16,9 @@ from .classifier import CATEGORIES, PRIORITIES, Classification, MockClassifier, 
 from .config import settings
 from .database import SessionLocal, get_db, migrate
 from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
-from .models import IdempotencyKey, Request, RequestEvent, sla_hours
+from .models import IdempotencyKey, Request, RequestEvent, sla_hours, team_routes
 from .policy import policy_reasons
-from .schemas import ClassifierStatus, ConfigOut, EventOut, PreviewIn, PreviewOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
+from .schemas import ClassifierStatus, ConfigOut, EventOut, PreviewIn, PreviewOut, WorkIn, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
 
 @asynccontextmanager
@@ -87,6 +87,25 @@ def seed_demo(db: Session) -> None:
         r.log("reviewed", r.reviewer, category=r.final_category, priority=r.final_priority,
               corrected=r.final_priority != r.pred_priority)
         r.events[-1].at = r.reviewed_at
+    # Trabajo: lo antiguo resuelto dentro de plazo, algo en curso y lo reciente abierto. Una urgente en curso
+    # se deja vencida para que el tablero muestre un retraso real.
+    people = ("Camila Torres (ejemplo)", "Andrés Pérez (ejemplo)")
+    done = [r for r in stored if r.status != "needs_review"]
+    late = next((r for r in done if r.priority == "alta"), None)
+    for j, r in enumerate(done):
+        age_h = (now - r.created_at).total_seconds() / 3600
+        start = (r.reviewed_at or r.created_at) + timedelta(minutes=20)
+        if r is late or 8 <= age_h < 20 and j % 2:
+            r.work_state, r.assignee = "en_curso", people[j % 2]
+        elif age_h >= 20:
+            r.work_state, r.assignee = "resuelta", people[j % 2]
+            r.resolved_at = start + timedelta(hours=min(sla_hours().get(r.priority, 24) * 0.6, age_h - 2))
+        if r.assignee:
+            r.log("work", r.assignee, before="abierta", after="en_curso", team=r.team)
+            r.events[-1].at = start
+        if r.resolved_at:
+            r.log("work", r.assignee, before="en_curso", after="resuelta", team=r.team)
+            r.events[-1].at = r.resolved_at
     db.commit()
 
 
@@ -122,7 +141,7 @@ def get_config(db: Session = Depends(get_db)):
             healthy=not last_failed and not getattr(clf, "quota_exhausted", False),
             failed_pending=db.scalar(waiting.where(Request.classifier_failed)) or 0,
             pending=db.scalar(waiting) or 0,
-            overdue=sum(r.overdue for r in db.scalars(select(Request).where(Request.status == "needs_review"))),
+            overdue=sum(r.overdue for r in db.scalars(select(Request).where(Request.work_state != "resuelta"))),
         ),
         confidence_threshold=settings.confidence_threshold,
         categories=list(CATEGORIES),
@@ -130,6 +149,7 @@ def get_config(db: Session = Depends(get_db)):
         always_review_priorities=[p.strip() for p in settings.always_review_priorities.split(",") if p.strip()],
         demo=settings.demo_mode,
         sla_hours=sla_hours(),
+        teams=list(dict.fromkeys(team_routes().values())),
         examples=EXAMPLES if settings.demo_mode else [],
     )
 
@@ -260,6 +280,30 @@ def reclassify_request(request_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Solo se reclasifican solicitudes pendientes de revisión.")
     classifier = get_classifier()
     apply(item, classifier.classify(item.subject, item.body), classifier.version)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@app.post("/api/requests/{request_id}/work", response_model=RequestOut, dependencies=[Depends(demo_guard)])
+def work_request(request_id: int, payload: WorkIn, db: Session = Depends(get_db)):
+    """Tomar (abierta -> en curso) o resolver (en curso -> resuelta). Lo que espera revisión no se trabaja aún."""
+    item = db.get(Request, request_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="La solicitud no existe.")
+    if item.status == "needs_review":
+        raise HTTPException(status_code=409, detail="Primero una persona tiene que revisar la clasificación.")
+    actor = VISITOR if settings.demo_mode else payload.actor
+    allowed = {"take": ("abierta", "en_curso"), "resolve": ("en_curso", "resuelta")}
+    before, after = allowed[payload.action]
+    if item.work_state != before:
+        raise HTTPException(status_code=409, detail=f"Está «{item.work_state}», no se puede {'tomar' if payload.action == 'take' else 'resolver'}.")
+    item.work_state = after
+    if payload.action == "take":
+        item.assignee = actor
+    else:
+        item.resolved_at = datetime.now(timezone.utc)
+    item.log("work", actor, before=before, after=after, team=item.team)
     db.commit()
     db.refresh(item)
     return item

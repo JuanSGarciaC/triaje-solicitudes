@@ -19,6 +19,8 @@ export const api = {
   evalReports: () => http<EvalReport[]>("/eval"),
   createRequest: (data: NewRequest) => http<RequestItem>("/requests", { method: "POST", body: JSON.stringify(data) }),
   preview: (body: string) => http<Preview>("/classify/preview", { method: "POST", body: JSON.stringify({ body }) }),
+  work: (id: number, action: "take" | "resolve", actor: string) =>
+    http<RequestItem>(`/requests/${id}/work`, { method: "POST", body: JSON.stringify({ action, actor }) }),
   events: (id: number) => http<RequestEvent[]>(`/requests/${id}/events`),
   reclassify: (id: number) => http<RequestItem>(`/requests/${id}/reclassify`, { method: "POST" }),
   review: (id: number, data: ReviewPayload) =>

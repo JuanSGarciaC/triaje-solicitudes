@@ -34,9 +34,9 @@ export const formatDate = (iso: string) =>
     timeStyle: "short",
   });
 
-/** «vence en 2 h» o «vencida hace 3 h»; null si ya no corre el plazo. */
+/** «vence en 2 h» o «vencida hace 3 h»; null si ya está resuelta. */
 export function dueText(r: RequestItem): string | null {
-  if (r.status !== "needs_review") return null;
+  if (r.work_state === "resuelta") return null; // el plazo corre hasta resolver (models.Request.closed)
   const ms = new Date(r.due_at).getTime() - Date.now();
   const abs = Math.abs(ms) / 60000;
   const span = abs < 60 ? `${Math.max(1, Math.round(abs))} min` : abs < 48 * 60 ? `${Math.round(abs / 60)} h` : `${Math.round(abs / 1440)} días`;

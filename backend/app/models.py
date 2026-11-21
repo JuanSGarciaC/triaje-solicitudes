@@ -7,6 +7,10 @@ from .config import settings
 from .database import Base
 
 
+def team_routes() -> dict[str, str]:
+    return dict(p.split("=", 1) for p in settings.team_routes.split(",") if "=" in p)
+
+
 def sla_hours() -> dict[str, float]:
     return {k.strip(): float(v) for k, v in (p.split("=") for p in settings.sla_hours.split(",") if "=" in p)}
 
@@ -42,6 +46,11 @@ class Request(Base):
     review_note: Mapped[str | None] = mapped_column(Text, default=None)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
+    # Trabajo después del triaje: abierta -> en_curso -> resuelta.
+    work_state: Mapped[str] = mapped_column(String(12), default="abierta", server_default="abierta", index=True)
+    assignee: Mapped[str | None] = mapped_column(String(120), default=None)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
     events: Mapped[list["RequestEvent"]] = relationship(
         order_by="RequestEvent.id", cascade="all, delete-orphan", back_populates="request"
     )
@@ -52,9 +61,17 @@ class Request(Base):
         return self.final_priority or self.pred_priority
 
     @property
+    def category(self) -> str:
+        return self.final_category or self.pred_category
+
+    @property
+    def team(self) -> str:
+        return team_routes().get(self.category, "Mesa general")
+
+    @property
     def closed(self) -> bool:
-        """Ya no corre el plazo: nadie tiene que hacer nada con ella."""
-        return self.status != "needs_review"
+        """Ya no corre el plazo: está resuelta."""
+        return self.work_state == "resuelta"
 
     @property
     def due_at(self) -> datetime:

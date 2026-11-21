@@ -23,6 +23,10 @@ export interface RequestItem {
   reviewed_at: string | null;
   due_at: string;
   overdue: boolean;
+  work_state: "abierta" | "en_curso" | "resuelta";
+  team: string;
+  assignee: string | null;
+  resolved_at: string | null;
 }
 
 export interface AppConfig {
@@ -35,12 +39,13 @@ export interface AppConfig {
   demo: boolean;
   classifier: { version: string; healthy: boolean; failed_pending: number; pending: number; overdue: number };
   sla_hours: Record<string, number>;
+  teams: string[];
   examples: { subject: string; body: string }[];
 }
 
 export interface RequestEvent {
   at: string;
-  kind: "received" | "classified" | "decided" | "reviewed";
+  kind: "received" | "classified" | "decided" | "reviewed" | "work";
   actor: string;
   detail: Record<string, string | number | boolean | null>;
 }

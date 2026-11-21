@@ -80,7 +80,10 @@ const STAMP: Record<RequestEvent["kind"], string> = {
   classified: "Clasificada",
   decided: "Política",
   reviewed: "Revisada",
+  work: "Trabajo",
 };
+
+const WORK: Record<string, string> = { en_curso: "en curso", resuelta: "resuelta", abierta: "abierta" };
 
 function eventText(e: RequestEvent): string {
   const d = e.detail;
@@ -91,6 +94,7 @@ function eventText(e: RequestEvent): string {
       : `${label(CATEGORY_LABEL, String(d.category))} · prioridad ${d.priority} · confianza ${pct(Number(d.confidence))} · ${clfLabel(String(d.version))}`;
   if (e.kind === "decided")
     return `${STATUS_LABEL[d.status as Status] ?? d.status}${d.threshold != null ? ` · umbral ${pct(Number(d.threshold))}` : ""}`;
+  if (e.kind === "work") return `${e.actor}: ${WORK[String(d.before)]} → ${WORK[String(d.after)]} · ${d.team}`;
   return `${e.actor} ${d.corrected ? "corrigió" : "confirmó"}: ${label(CATEGORY_LABEL, String(d.category))} · prioridad ${d.priority}`;
 }
 

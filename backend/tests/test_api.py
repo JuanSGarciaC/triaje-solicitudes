@@ -162,4 +162,22 @@ def test_vencimiento_por_prioridad(client):
     assert client.get(f"/api/requests/{r['id']}").json()["overdue"] is True
     assert client.get("/api/config").json()["classifier"]["overdue"] >= 1
     client.post(f"/api/requests/{r['id']}/review", json={"category": r["pred_category"], "priority": "alta", "reviewer": "Bea"})
-    assert client.get(f"/api/requests/{r['id']}").json()["overdue"] is False  # revisada: el plazo deja de correr
+    assert client.get(f"/api/requests/{r['id']}").json()["overdue"] is True  # revisada no basta: el plazo es para resolver
+    for action in ("take", "resolve"):
+        client.post(f"/api/requests/{r['id']}/work", json={"action": action, "actor": "Bea"})
+    assert client.get(f"/api/requests/{r['id']}").json()["overdue"] is False
+
+
+def test_tomar_y_resolver(client):
+    r = client.post("/api/requests", json={"subject": "Instalar Excel", "body": "Necesito instalar Excel en mi equipo.", "requester": "Ana"}).json()
+    assert r["work_state"] == "abierta" and r["team"] == "Software"
+    work = lambda action: client.post(f"/api/requests/{r['id']}/work", json={"action": action, "actor": "Bea"})  # noqa: E731
+    assert work("resolve").status_code == 409  # hay que tomarla antes
+    taken = work("take").json()
+    assert taken["work_state"] == "en_curso" and taken["assignee"] == "Bea"
+    done = work("resolve").json()
+    assert done["work_state"] == "resuelta" and done["resolved_at"] and done["overdue"] is False
+    assert [e["kind"] for e in client.get(f"/api/requests/{r['id']}/events").json()][-2:] == ["work", "work"]
+
+    urgent = client.post("/api/requests", json={"subject": "Caído", "body": "Producción caída para todos, urgente.", "requester": "Ana"}).json()
+    assert client.post(f"/api/requests/{urgent['id']}/work", json={"action": "take", "actor": "Bea"}).status_code == 409
