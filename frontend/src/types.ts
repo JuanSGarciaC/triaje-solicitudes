@@ -24,6 +24,8 @@ export interface RequestItem {
 }
 
 export interface AppConfig {
+  brand_name: string;
+  brand_tagline: string;
   confidence_threshold: number;
   categories: string[];
   priorities: string[];

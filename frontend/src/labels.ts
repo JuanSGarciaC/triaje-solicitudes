@@ -34,6 +34,8 @@ export const formatDate = (iso: string) =>
     timeStyle: "short",
   });
 
+export const ticketNo = (id: number) => String(id).padStart(4, "0");
+
 export const pct = (v: number) => `${Math.round(v * 100)} %`;
 
 export const clfLabel = (version: string) =>

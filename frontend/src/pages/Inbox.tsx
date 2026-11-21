@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { api, useLoad } from "../api";
 import { ConfidenceMeter, Detail, ErrorNote, PriorityBadge, StatusBadge } from "../components";
 import Flow from "../Flow";
-import { CATEGORY_LABEL, STATUS_LABEL, formatDate, label } from "../labels";
+import { CATEGORY_LABEL, STATUS_LABEL, formatDate, label, ticketNo } from "../labels";
 import type { AppConfig, RequestItem, Status } from "../types";
 
 const FILTERS: (Status | null)[] = [null, "auto_approved", "needs_review", "reviewed"];
@@ -49,7 +49,7 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
       <Flow config={config} items={items} traveling={last} onArrive={list.reload} filter={filter} onFilter={setFilter} />
 
       <div className="split inbox">
-        <section className="panel glow" aria-labelledby="nueva">
+        <section className="panel" aria-labelledby="nueva">
           <h3 id="nueva">Nueva solicitud</h3>
           <form onSubmit={submit} className="form">
             {config.demo ? (
@@ -102,7 +102,7 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
           )}
         </section>
 
-        <section className="panel glow" aria-labelledby="recientes">
+        <section className="panel" aria-labelledby="recientes">
           <div className="panel-head">
             <h3 id="recientes">Solicitudes</h3>
             <div className="chips" role="group" aria-label="Filtrar por estado">
@@ -122,7 +122,8 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
           <ul className="rows">
             {shown.map((r) => (
               <li key={r.id}>
-                <button className="row-btn" onClick={() => setOpen(r)}>
+                <button className={`row-btn ticket prio-band-${r.final_priority ?? r.pred_priority}`} onClick={() => setOpen(r)}>
+                  <span className="stub">N.º {ticketNo(r.id)}</span>
                   <span className="row-main">
                     <strong>{r.subject}</strong>
                     <span className="muted">

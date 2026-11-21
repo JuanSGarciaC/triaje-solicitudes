@@ -108,14 +108,14 @@ export default function Flow({ config, items, traveling, onArrive, filter, onFil
   else caption = "Elige una rama para filtrar la lista. Mueve el umbral para simular otra política.";
 
   return (
-    <section className="flow glow" aria-label="Lienzo de decisión">
+    <section className="flow" aria-label="Lienzo de decisión">
       <div className="flow-scroll">
         <div className={`flow-stage ${simulating ? "simulating" : ""}`}>
           <svg viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
             <defs>
               <linearGradient id="g-main" x1="0" x2="1">
-                <stop offset="0" stopColor="var(--cyan)" />
-                <stop offset="1" stopColor="var(--violet)" />
+                <stop offset="0" stopColor="var(--ink)" />
+                <stop offset="1" stopColor="var(--ink)" />
               </linearGradient>
               <filter id="halo" x="-300%" y="-300%" width="700%" height="700%">
                 <feGaussianBlur stdDeviation="5" />

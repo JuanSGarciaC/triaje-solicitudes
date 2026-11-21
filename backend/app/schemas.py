@@ -59,6 +59,8 @@ class ClassifierStatus(BaseModel):
 
 
 class ConfigOut(BaseModel):
+    brand_name: str
+    brand_tagline: str
     confidence_threshold: float
     categories: list[str]
     priorities: list[str]

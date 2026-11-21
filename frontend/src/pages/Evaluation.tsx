@@ -84,7 +84,7 @@ export default function Evaluation() {
       {data && data.length === 0 && <p className="panel muted">No hay reportes guardados. Ejecuta eval/run_eval.py.</p>}
       {data && data.length > 0 && (
         <>
-          <section className="panel glow" aria-labelledby="comparacion">
+          <section className="panel" aria-labelledby="comparacion">
             <h3 id="comparacion">Comparación</h3>
             <table className="versus">
               <thead>
@@ -129,7 +129,7 @@ export default function Evaluation() {
 
           <div className="split">
             {data.map((r) => (
-              <section key={r.classifier} className="panel glow" aria-label={`Detalle de ${clfLabel(r.classifier)}`}>
+              <section key={r.classifier} className="panel" aria-label={`Detalle de ${clfLabel(r.classifier)}`}>
                 <h3>{clfLabel(r.classifier)}</h3>
                 <Matrix report={r} />
                 <Errors title="Errores de categoría" items={r.category_errors} map={CATEGORY_LABEL} />

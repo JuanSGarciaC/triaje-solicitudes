@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response
 from fastapi import Request as HttpRequest
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -106,6 +106,8 @@ def get_config(db: Session = Depends(get_db)):
     last_failed = db.scalar(select(Request.classifier_failed).order_by(Request.id.desc()).limit(1))
     pending = select(func.count(Request.id)).where(Request.status == "needs_review", Request.classifier_failed)
     return ConfigOut(
+        brand_name=settings.brand_name,
+        brand_tagline=settings.brand_tagline,
         classifier=ClassifierStatus(
             version=clf.version,
             healthy=not last_failed and not getattr(clf, "quota_exhausted", False),
@@ -266,7 +268,9 @@ LANDING = Path(__file__).parent / "landing"
 
 @app.api_route("/como-funciona", methods=["GET", "HEAD"], include_in_schema=False)
 def landing():
-    return FileResponse(LANDING / "index.html")
+    # Sigue siendo HTML estático: solo se rellena la marca, sin plantillas ni JS.
+    html = (LANDING / "index.html").read_text(encoding="utf-8")
+    return HTMLResponse(html.replace("{{MARCA}}", settings.brand_name).replace("{{LEMA}}", settings.brand_tagline))
 
 
 app.mount("/como-funciona", StaticFiles(directory=LANDING), name="landing")

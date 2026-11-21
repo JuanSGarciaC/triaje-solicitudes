@@ -1,4 +1,4 @@
-import type { PointerEvent } from "react";
+import { useEffect } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { api, useLoad } from "./api";
 import { ErrorNote, ModelNotice } from "./components";
@@ -8,25 +8,23 @@ import Inbox from "./pages/Inbox";
 import Metrics from "./pages/Metrics";
 import Review from "./pages/Review";
 
-// Un solo listener: cada panel .glow recibe la posición del puntero para iluminar su borde.
-function trackPointer(e: PointerEvent) {
-  const el = (e.target as HTMLElement).closest<HTMLElement>(".glow");
-  if (!el) return;
-  const r = el.getBoundingClientRect();
-  el.style.setProperty("--mx", `${e.clientX - r.left}px`);
-  el.style.setProperty("--my", `${e.clientY - r.top}px`);
-}
-
 export default function App() {
   const config = useLoad(api.config, []);
+  const brand = config.data && `${config.data.brand_name} · ${config.data.brand_tagline}`;
+  useEffect(() => {
+    if (brand) document.title = brand;
+  }, [brand]);
 
   return (
-    <div className="shell" onPointerMove={trackPointer}>
+    <div className="shell">
       <header className="top">
-        <div className="brand">
-          <h1>Triaje</h1>
-          <p>Solicitudes de soporte de TI</p>
-        </div>
+        <a className="brand" href="/como-funciona" aria-label={brand ? `${brand}: cómo funciona` : "Cómo funciona"}>
+          <img src="/como-funciona/sello.svg" alt="" width="34" height="34" />
+          <span>
+            <span className="brand-name">{config.data?.brand_name ?? "\u00a0"}</span>
+            <span className="brand-tag">{config.data?.brand_tagline}</span>
+          </span>
+        </a>
         <nav aria-label="Principal">
           <NavLink to="/" end>
             Bandeja

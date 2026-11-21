@@ -1,0 +1,4 @@
+Fuentes copiadas de los paquetes @fontsource (subconjunto latino), servidas desde este mismo servidor.
+- Archivo (Omnibus-Type), IBM Plex Mono (IBM) y Public Sans (USWDS): SIL Open Font License 1.1.
+  https://openfontlicense.org
+El panel usa los mismos paquetes vía npm (frontend/package.json).

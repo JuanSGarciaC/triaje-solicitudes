@@ -41,6 +41,7 @@ def test_validation_errors(client):
 def test_config_endpoint(client):
     cfg = client.get("/api/config").json()
     assert "acceso_cuentas" in cfg["categories"] and cfg["confidence_threshold"] == 0.75
+    assert cfg["brand_name"] == "Sello"  # la marca vive solo en settings.brand_name
 
 
 def test_panel_routes_fall_back_to_index_but_api_does_not(client):

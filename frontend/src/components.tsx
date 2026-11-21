@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { api, useLoad } from "./api";
-import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, clfLabel, formatDate, label, pct, why } from "./labels";
+import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, clfLabel, formatDate, label, pct, ticketNo, why } from "./labels";
 import type { AppConfig, RequestEvent, RequestItem, Status } from "./types";
 
 export function ConfidenceMeter({ value, threshold }: { value: number; threshold: number }) {
@@ -129,7 +129,10 @@ export function Detail({ item, config, onClose }: { item: RequestItem | null; co
             </button>
           </header>
           <p className="muted">
-            {item.requester} · {formatDate(item.created_at)} · solicitud n.º {item.id}
+            {item.requester} · {formatDate(item.created_at)} · solicitud N.º {ticketNo(item.id)}
+          </p>
+          <p>
+            <span className={`stamp stamp-${item.status}`}>{STATUS_LABEL[item.status]}</span>
           </p>
           <p className="body-text">{item.body}</p>
 

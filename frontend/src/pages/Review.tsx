@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, useLoad } from "../api";
 import { ConfidenceMeter, ErrorNote, PriorityBadge, Timeline } from "../components";
-import { CATEGORY_LABEL, PRIORITY_LABEL, clfLabel, formatDate, label, why } from "../labels";
+import { CATEGORY_LABEL, PRIORITY_LABEL, clfLabel, formatDate, label, ticketNo, why } from "../labels";
 import type { AppConfig } from "../types";
 
 export default function Review({ config, onChange }: { config: AppConfig; onChange: () => void }) {
@@ -16,6 +16,7 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [stamp, setStamp] = useState<string | null>(null);
 
   const all = queue.data ?? [];
   const failedCount = all.filter((r) => r.classifier_failed).length;
@@ -40,6 +41,10 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
     setError(null);
     try {
       await api.review(selected.id, { category, priority, reviewer: config.demo ? "Visitante" : reviewer, note: note || undefined });
+      // El sello cae sobre el tique antes de que salga de la cola (sin animación con reduced-motion).
+      setStamp(changed ? "Corregida" : "Revisada");
+      await new Promise((ok) => setTimeout(ok, matchMedia("(prefers-reduced-motion: reduce)").matches ? 400 : 900));
+      setStamp(null);
       setSelectedId(null);
       queue.reload();
       onChange();
@@ -92,7 +97,11 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
           <ul className="rows queue" aria-label="Cola de revisión">
             {items.map((r) => (
               <li key={r.id}>
-                <button className={`row-btn ${r.id === selected.id ? "active" : ""}`} onClick={() => setSelectedId(r.id)}>
+                <button
+                  className={`row-btn ticket prio-band-${r.pred_priority} ${r.id === selected.id ? "active" : ""}`}
+                  onClick={() => setSelectedId(r.id)}
+                >
+                  <span className="stub">N.º {ticketNo(r.id)}</span>
                   <strong>{r.subject}</strong>
                   <span className="muted">
                     {formatDate(r.created_at)}
@@ -103,7 +112,13 @@ export default function Review({ config, onChange }: { config: AppConfig; onChan
             ))}
           </ul>
 
-          <section className="panel glow" aria-labelledby="detalle">
+          <section className="panel ticket-sheet" aria-labelledby="detalle">
+            {stamp && (
+              <span className="stamp stamp-drop" role="status">
+                {stamp}
+              </span>
+            )}
+            <p className="sheet-no">Solicitud N.º {ticketNo(selected.id)}</p>
             <h3 id="detalle">{selected.subject}</h3>
             <p className="muted">
               {selected.requester} · {formatDate(selected.created_at)}

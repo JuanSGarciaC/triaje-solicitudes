@@ -4,6 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # Marca visible (panel y /como-funciona). Único lugar donde vive el nombre: cámbialo aquí o con BRAND_NAME.
+    brand_name: str = "Sello"
+    brand_tagline: str = "triaje de solicitudes de TI"
     database_url: str = "sqlite:///./triaje.db"
     llm_provider: str = "mock"  # "mock" (sin costo) | "gemini" (Google AI Studio) | "anthropic"
     anthropic_api_key: str = ""

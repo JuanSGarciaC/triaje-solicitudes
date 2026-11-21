@@ -22,27 +22,27 @@ export default function Metrics({ config }: { config: AppConfig }) {
       {data && (
         <>
           <section className="tiles" aria-label="Resumen">
-            <div className="tile glow">
+            <div className="tile">
               <span className="tile-value">{data.total}</span>
               <span className="muted">Solicitudes recibidas</span>
             </div>
-            <div className="tile glow">
+            <div className="tile">
               <span className="tile-value">{pct(data.auto_approved_share)}</span>
               <span className="muted">Aprobadas automáticamente</span>
             </div>
-            <div className="tile glow">
+            <div className="tile">
               <span className="tile-value">{pct(data.human_correction_rate)}</span>
               <span className="muted">
                 Corregidas por personas ({data.reviewed_count} revisadas)
               </span>
             </div>
-            <div className="tile glow">
+            <div className="tile">
               <span className="tile-value">{Math.round(data.avg_confidence * 100)}%</span>
               <span className="muted">Confianza promedio (umbral {Math.round(config.confidence_threshold * 100)}%)</span>
             </div>
           </section>
 
-          <section className="panel glow" aria-labelledby="estados">
+          <section className="panel" aria-labelledby="estados">
             <h3 id="estados">Quién decidió</h3>
             <div className="stack" role="img" aria-label={STATUSES.map((s) => `${STATUS_LABEL[s]}: ${data.by_status[s] ?? 0}`).join(". ")}>
               {STATUSES.map((s) => (
@@ -59,7 +59,7 @@ export default function Metrics({ config }: { config: AppConfig }) {
             </ul>
           </section>
 
-          <section className="panel glow" aria-labelledby="cats" style={{ marginTop: "1.25rem" }}>
+          <section className="panel" aria-labelledby="cats" style={{ marginTop: "1.25rem" }}>
             <h3 id="cats">Solicitudes por categoría</h3>
             {data.total === 0 && <p className="muted">Todavía no hay datos. Envía solicitudes desde la bandeja.</p>}
             <ul className="bars">
