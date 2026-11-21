@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from .classifier import CATEGORIES, PRIORITIES, get_classifier
 from .config import settings
-from .database import Base, SessionLocal, engine, get_db
+from .database import SessionLocal, get_db, migrate
 from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
 from .models import IdempotencyKey, Request
 from .policy import decide_status
@@ -23,7 +23,7 @@ from .schemas import ConfigOut, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    Base.metadata.create_all(engine)
+    migrate()
     if settings.demo_mode:
         with SessionLocal() as db:
             seed_demo(db)
