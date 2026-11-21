@@ -61,6 +61,22 @@ export interface Preview {
   rules_fallback: boolean;
 }
 
+export interface ReviewStat {
+  label: string;
+  reviewed: number;
+  corrected: number;
+}
+
+export interface Desk {
+  teams: { team: string; open: number; in_progress: number; overdue: number }[];
+  overdue: number;
+  avg_hours_to_review: number | null;
+  avg_hours_to_resolve: number | null;
+  resolved_on_time: number | null;
+  weeks: ReviewStat[];
+  categories: ReviewStat[];
+}
+
 export interface Metrics {
   total: number;
   by_status: Record<string, number>;

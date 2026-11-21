@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response
 from fastapi import Request as HttpRequest
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -15,10 +15,10 @@ from sqlalchemy.orm import Session
 from .classifier import CATEGORIES, PRIORITIES, Classification, MockClassifier, fallback, get_classifier
 from .config import settings
 from .database import SessionLocal, get_db, migrate
-from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip
+from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip, load_labeled
 from .models import IdempotencyKey, Request, RequestEvent, sla_hours, team_routes
 from .policy import policy_reasons
-from .schemas import ClassifierStatus, ConfigOut, EventOut, PreviewIn, PreviewOut, WorkIn, MetricsOut, RequestCreate, RequestOut, ReviewIn
+from .schemas import ClassifierStatus, ConfigOut, DeskOut, EventOut, ReviewStat, TeamLoad, PreviewIn, PreviewOut, WorkIn, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
 
 @asynccontextmanager
@@ -105,6 +105,35 @@ def seed_demo(db: Session) -> None:
             r.events[-1].at = start
         if r.resolved_at:
             r.log("work", r.assignee, before="en_curso", after="resuelta", team=r.team)
+            r.events[-1].at = r.resolved_at
+    db.commit()
+    seed_history(db, now, people)
+
+
+def seed_history(db: Session, now: datetime, people: tuple[str, str]) -> None:
+    """Cinco semanas anteriores, ya resueltas, para que Métricas tenga serie semanal. Quien revisa aplica la
+    etiqueta esperada del conjunto de desarrollo: las correcciones son los errores reales del clasificador."""
+    labeled = load_labeled("eval_set.csv")
+    for week in range(5, 0, -1):
+        for k in range(6):
+            row = labeled[(week * 6 + k) % len(labeled)]
+            r = store(db, row["subject"], row["body"], "Laura Ríos (ejemplo)")
+            r.created_at = now - timedelta(weeks=week, hours=k * 19)
+            for ev in r.events:
+                ev.at = r.created_at
+            person = people[k % 2]
+            if r.status == "needs_review":
+                r.final_category, r.final_priority = row["expected_category"], row["expected_priority"]
+                r.reviewer, r.reviewed_at, r.status = person, r.created_at + timedelta(hours=2), "reviewed"
+                corrected = (r.final_category, r.final_priority) != (r.pred_category, r.pred_priority)
+                r.log("reviewed", person, category=r.final_category, priority=r.final_priority, corrected=corrected)
+                r.events[-1].at = r.reviewed_at
+            start = (r.reviewed_at or r.created_at) + timedelta(minutes=30)
+            r.work_state, r.assignee = "resuelta", person
+            r.resolved_at = start + timedelta(hours=sla_hours().get(r.priority, 24) * (0.3 + 0.1 * k))
+            r.log("work", person, before="abierta", after="en_curso", team=r.team)
+            r.events[-1].at = start
+            r.log("work", person, before="en_curso", after="resuelta", team=r.team)
             r.events[-1].at = r.resolved_at
     db.commit()
 
@@ -327,6 +356,71 @@ def metrics(db: Session = Depends(get_db)):
         auto_approved_share=round(by_status.get("auto_approved", 0) / total, 3) if total else 0.0,
         reviewed_count=len(reviewed),
         human_correction_rate=round(corrected / len(reviewed), 3) if reviewed else None,
+    )
+
+
+def corrected(r: Request) -> bool:
+    return (r.final_category, r.final_priority) != (r.pred_category, r.pred_priority)
+
+
+@app.get("/api/metrics/desk", response_model=DeskOut)
+def desk(db: Session = Depends(get_db)):
+    """Tablero de la mesa: carga por equipo, vencidas, tiempos y corrección humana por semana y categoría."""
+    rows = db.scalars(select(Request)).all()
+    hours = lambda a, b: (a - b).total_seconds() / 3600  # noqa: E731
+    avg = lambda xs: round(sum(xs) / len(xs), 1) if xs else None  # noqa: E731
+    live = [r for r in rows if r.work_state != "resuelta"]
+    teams = [
+        TeamLoad(
+            team=t,
+            open=sum(r.team == t and r.work_state == "abierta" for r in live),
+            in_progress=sum(r.team == t and r.work_state == "en_curso" for r in live),
+            overdue=sum(r.team == t and r.overdue for r in live),
+        )
+        for t in dict.fromkeys(team_routes().values())
+    ]
+    reviewed = [r for r in rows if r.reviewed_at]
+    resolved = [r for r in rows if r.resolved_at]
+    now = datetime.now(timezone.utc)
+    weeks: dict[str, list[Request]] = {}
+    for k in range(5, -1, -1):  # las 6 últimas semanas, de lunes a domingo
+        monday = (now - timedelta(weeks=k, days=now.weekday())).date().isoformat()
+        weeks[monday] = []
+    for r in reviewed:
+        when = r.aware(r.reviewed_at)
+        monday = (when - timedelta(days=when.weekday())).date().isoformat()
+        if monday in weeks:
+            weeks[monday].append(r)
+    cats: dict[str, list[Request]] = {}
+    for r in reviewed:
+        cats.setdefault(r.pred_category, []).append(r)
+    stat = lambda label, rs: ReviewStat(label=label, reviewed=len(rs), corrected=sum(map(corrected, rs)))  # noqa: E731
+    return DeskOut(
+        teams=teams,
+        overdue=sum(r.overdue for r in live),
+        avg_hours_to_review=avg([hours(r.aware(r.reviewed_at), r.aware(r.created_at)) for r in reviewed]),
+        avg_hours_to_resolve=avg([hours(r.aware(r.resolved_at), r.aware(r.created_at)) for r in resolved]),
+        resolved_on_time=round(sum(r.aware(r.resolved_at) <= r.due_at for r in resolved) / len(resolved), 3) if resolved else None,
+        weeks=[stat(w, rs) for w, rs in weeks.items()],
+        categories=sorted((stat(c, rs) for c, rs in cats.items()), key=lambda s: -s.reviewed),
+    )
+
+
+@app.get("/api/reviews.csv", response_class=PlainTextResponse)
+def reviews_csv(db: Session = Depends(get_db)):
+    """Las revisiones humanas como casos etiquetados, con las columnas de eval/eval_set.csv: sirven para
+    medir el clasificador con run_eval.py (no lo reentrenan)."""
+    import csv
+    import io
+
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["subject", "body", "expected_category", "expected_priority", "predicted_category", "predicted_priority", "corrected"])
+    for r in db.scalars(select(Request).where(Request.status == "reviewed").order_by(Request.id)):
+        w.writerow([r.subject, r.body, r.final_category, r.final_priority, r.pred_category, r.pred_priority, int(corrected(r))])
+    return PlainTextResponse(
+        out.getvalue(), media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="revisiones-como-casos.csv"'},
     )
 
 

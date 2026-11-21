@@ -181,3 +181,16 @@ def test_tomar_y_resolver(client):
 
     urgent = client.post("/api/requests", json={"subject": "Caído", "body": "Producción caída para todos, urgente.", "requester": "Ana"}).json()
     assert client.post(f"/api/requests/{urgent['id']}/work", json={"action": "take", "actor": "Bea"}).status_code == 409
+
+
+def test_tablero_de_la_mesa_y_csv(client):
+    r = client.post("/api/requests", json={"subject": "Caído", "body": "Producción caída para todos, urgente.", "requester": "Ana"}).json()
+    client.post(f"/api/requests/{r['id']}/review", json={"category": "software", "priority": "media", "reviewer": "Bea"})
+    d = client.get("/api/metrics/desk").json()
+    assert {t["team"] for t in d["teams"]} >= {"Software", "Redes", "Mesa general"}
+    assert len(d["weeks"]) == 6 and d["weeks"][-1]["reviewed"] >= 1 and d["weeks"][-1]["corrected"] >= 1
+    assert d["avg_hours_to_review"] is not None
+    csv_text = client.get("/api/reviews.csv")
+    assert csv_text.headers["content-type"].startswith("text/csv")
+    lines = csv_text.text.splitlines()
+    assert lines[0].startswith("subject,body,expected_category,expected_priority") and any("Caído" in x for x in lines)

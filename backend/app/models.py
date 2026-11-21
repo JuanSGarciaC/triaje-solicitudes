@@ -55,6 +55,10 @@ class Request(Base):
         order_by="RequestEvent.id", cascade="all, delete-orphan", back_populates="request"
     )
 
+    def aware(self, dt: datetime | None) -> datetime | None:
+        """SQLite devuelve fechas sin zona: son UTC."""
+        return dt.replace(tzinfo=timezone.utc) if dt and dt.tzinfo is None else dt
+
     @property
     def priority(self) -> str:
         """Prioridad vigente: la de la persona si la corrigió; si no, la del modelo."""
@@ -75,8 +79,7 @@ class Request(Base):
 
     @property
     def due_at(self) -> datetime:
-        created = self.created_at if self.created_at.tzinfo else self.created_at.replace(tzinfo=timezone.utc)
-        return created + timedelta(hours=sla_hours().get(self.priority, 24))
+        return self.aware(self.created_at) + timedelta(hours=sla_hours().get(self.priority, 24))
 
     @property
     def overdue(self) -> bool:

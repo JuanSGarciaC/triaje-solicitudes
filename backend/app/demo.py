@@ -16,6 +16,11 @@ def load_examples(name: str) -> list[dict[str, str]]:
         return [{"subject": r["subject"], "body": r["body"]} for r in csv.DictReader(f)]
 
 
+def load_labeled(name: str) -> list[dict[str, str]]:
+    with open(EVAL_DIR / name, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
 SEED = load_examples("eval_set.csv")  # se cargan al arrancar la demo
 EXAMPLES = load_examples("eval_final.csv") + SEED  # lo único que un visitante puede enviar
 ALLOWED = {(e["subject"], e["body"]) for e in EXAMPLES}

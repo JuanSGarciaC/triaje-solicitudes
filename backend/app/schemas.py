@@ -105,6 +105,29 @@ class ConfigOut(BaseModel):
     examples: list[dict[str, str]]
 
 
+class TeamLoad(BaseModel):
+    team: str
+    open: int
+    in_progress: int
+    overdue: int
+
+
+class ReviewStat(BaseModel):
+    label: str  # semana (fecha del lunes) o categoría
+    reviewed: int
+    corrected: int
+
+
+class DeskOut(BaseModel):
+    teams: list[TeamLoad]
+    overdue: int
+    avg_hours_to_review: float | None
+    avg_hours_to_resolve: float | None
+    resolved_on_time: float | None
+    weeks: list[ReviewStat]
+    categories: list[ReviewStat]
+
+
 class MetricsOut(BaseModel):
     total: int
     by_status: dict[str, int]
