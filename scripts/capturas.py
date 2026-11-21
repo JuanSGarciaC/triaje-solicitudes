@@ -8,9 +8,10 @@ Usa el navegador instalado (Edge por defecto; BROWSER_CHANNEL=chrome para Chrome
 deviceScaleFactor 2, recortadas a lo relevante. Las demos se graban a ritmo real: cada fotograma guarda cuánto
 tardó de verdad, y el GIF usa una paleta común sin tramado para que el kraft no haga bandas ni parpadee.
 """
+import base64
 import io
 import os
-import time
+from collections import Counter
 from pathlib import Path
 
 from PIL import Image
@@ -38,48 +39,79 @@ def shot(page: Page, name: str, selector: str | None = None, clip: dict | None =
 
 
 class Recorder:
-    """Graba fotogramas del viewport a ritmo real mientras el guion avanza."""
+    """Graba el viewport a ritmo real con el screencast del navegador (CDP): los fotogramas llegan con su marca de
+    tiempo mientras el guion avanza, sin bloquearlo como haría una captura por fotograma."""
 
     def __init__(self, page: Page, width: int):
-        self.page, self.width, self.frames, self.times = page, width, [], []
+        self.page, self.width, self.raw, self.live = page, width, [], True
+        self.cdp = page.context.new_cdp_session(page)
+        self.cdp.on("Page.screencastFrame", self._frame)
+        self.cdp.send("Page.startScreencast", {"format": "jpeg", "quality": 92, "everyNthFrame": 1})
 
-    def grab(self) -> None:
-        self.times.append(time.perf_counter())
-        img = Image.open(io.BytesIO(self.page.screenshot())).convert("RGB")
-        self.frames.append(img.resize((self.width, round(self.width * img.height / img.width)), Image.LANCZOS))
+    def _frame(self, ev: dict) -> None:
+        self.raw.append((ev["metadata"]["timestamp"], ev["data"]))
+        if self.live:
+            try:
+                self.cdp.send("Page.screencastFrameAck", {"sessionId": ev["sessionId"]})
+            except Exception:  # la página ya se cerró
+                pass
 
     def hold(self, seconds: float) -> None:
-        end = time.perf_counter() + seconds
-        while time.perf_counter() < end:
-            self.grab()
+        self.page.wait_for_timeout(seconds * 1000)
 
     def save(self, name: str, fps: int = 13) -> None:
-        # Remuestrea a fps fijos según el tiempo real de cada captura (sin acelerar ni frenar la escena).
-        t0, step = self.times[0], 1 / fps
-        picked, k = [], 0
-        t = t0
-        while t <= self.times[-1]:
-            while k + 1 < len(self.times) and self.times[k + 1] <= t:
+        self.live = False
+        self.cdp.send("Page.stopScreencast")
+        times = [t for t, _ in self.raw]
+        decoded: dict[int, Image.Image] = {}
+
+        def frame(k: int) -> Image.Image:
+            if k not in decoded:
+                img = Image.open(io.BytesIO(base64.b64decode(self.raw[k][1]))).convert("RGB")
+                decoded[k] = img.resize((self.width, round(self.width * img.height / img.width)), Image.LANCZOS)
+            return decoded[k]
+
+        # Remuestrea a fps fijos según el tiempo real de cada fotograma (sin acelerar ni frenar la escena).
+        picked, k, t = [], 0, times[0]
+        while t <= times[-1]:
+            while k + 1 < len(times) and times[k + 1] <= t:
                 k += 1
-            picked.append(self.frames[k])
-            t += step
-        sample = Image.new("RGB", (picked[0].width, picked[0].height * 6))
-        for i, f in enumerate(picked[:: max(1, len(picked) // 6)][:6]):
-            sample.paste(f, (0, i * f.height))
-        palette = sample.quantize(colors=255, method=Image.Quantize.MEDIANCUT)
+            picked.append(frame(k))
+            t += 1 / fps
+        palette = shared_palette(picked)
         gif = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in picked]
         durations = [round(1000 / fps)] * (len(gif) - 1) + [1800]
         gif[0].save(OUT / name, save_all=True, append_images=gif[1:], duration=durations, loop=0, optimize=True, disposal=1)
         size = (OUT / name).stat().st_size
-        print(f"{name}: {len(gif)} fotogramas, {len(gif) / fps:.1f} s a {fps} fps, {gif[0].width}×{gif[0].height}, {size // 1024} KB")
+        print(f"{name}: {len(self.raw)} fotogramas grabados, {len(gif)} a {fps} fps ({len(gif) / fps:.1f} s), "
+              f"{gif[0].width}×{gif[0].height}, {size // 1024} KB")
+
+
+def shared_palette(frames: list[Image.Image]) -> Image.Image:
+    """Una sola paleta para todo el GIF (lo que no cambia no parpadea y Pillow solo guarda lo que cambia):
+    los 128 colores más usados, exactos (fondos y papel sin bandas), y 127 que representan al resto con el mismo
+    peso cada uno, para que un sello que dura medio segundo conserve su tinta."""
+    counts: Counter = Counter()
+    for f in frames[::2]:  # colores reales, agrupados en casillas de 5 bits para absorber el ruido del JPEG
+        for n, (r, g, b) in f.getcolors(1 << 24):
+            counts[(r & 0xF8 | 4, g & 0xF8 | 4, b & 0xF8 | 4)] += n
+    top = [c for c, _ in counts.most_common(128)]
+    rest = [c for c in counts if c not in set(top)]
+    extra: list[tuple[int, int, int]] = []
+    if rest:
+        swatch = Image.new("RGB", (len(rest), 1))
+        swatch.putdata(rest)
+        q = swatch.quantize(colors=min(127, len(rest)), method=Image.Quantize.MEDIANCUT)
+        pal = q.getpalette()[: 3 * min(127, len(rest))]
+        extra = [tuple(pal[i : i + 3]) for i in range(0, len(pal), 3)]
+    colors = top + extra
+    img = Image.new("P", (1, 1))
+    img.putpalette([v for c in colors for v in c] + [0] * (3 * (256 - len(colors))))
+    return img
 
 
 def type_slowly(rec: Recorder, page: Page, selector: str, text: str) -> None:
-    box = page.locator(selector)
-    for i in range(0, len(text) + 1, 3):  # ~3 letras por fotograma: tecleo a ritmo de persona
-        box.fill(text[:i])
-        rec.grab()
-    box.fill(text)
+    page.locator(selector).press_sequentially(text, delay=28)  # tecleo a ritmo de persona
 
 
 def demo_panel(browser) -> None:
@@ -118,9 +150,9 @@ def demo_landing(browser) -> None:
         page.mouse.move(400, 400)
         rec = Recorder(page, 960)
         rec.hold(1.2)
-        for _ in range(34):  # scroll de rueda a ritmo de lectura: el tique fijo recibe los sellos
+        for _ in range(20):  # scroll de rueda a ritmo de lectura: el tique fijo recibe los sellos
             page.mouse.wheel(0, 70)
-            rec.hold(0.17)
+            rec.hold(0.3)
         rec.hold(1.6)
         rec.save("demo-landing.gif")
     finally:
