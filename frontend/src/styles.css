@@ -1,6 +1,7 @@
-/* Lenguaje «Ventanilla»: cada solicitud es un tique de papel sobre un fondo de tinta que va recibiendo sellos.
-   Prioridad con los colores del triaje Manchester (siempre con texto). El azul tinta es solo de la persona:
-   discontinuo = espera a una persona; lleno = una persona lo selló. Grafito = lo aprobó la política sola. */
+/* Lenguaje «Ventanilla»: cada solicitud es un tique de papel sobre un escritorio de kraft que va recibiendo sellos.
+   Colores en ../../backend/app/landing/tokens.css (servido en /como-funciona/tokens.css). Prioridad en tintas de
+   tampón (oxblood, mostaza, pizarra), siempre con texto. El índigo es solo de la persona: discontinuo = espera a
+   una persona; lleno = una persona lo selló. Grafito = lo aprobó la política sola. */
 @property --angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
 
 :root {
@@ -144,7 +145,7 @@ button.chip[aria-pressed="true"]:hover { color: var(--activo-texto); }
 /* ---------- Tiques ---------- */
 .rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
 .row-btn { width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 0.7rem 0.6rem; display: grid; gap: 0.35rem; transition: background 0.15s; }
-/* Minitique: talón con número, franja de prioridad Manchester y borde de corte. */
+/* Minitique: talón con número, franja de prioridad y borde de corte. */
 .row-btn.ticket {
   --band: var(--grafito);
   position: relative; grid-template-columns: auto 1fr; column-gap: 0.9rem; align-items: start;
@@ -162,7 +163,7 @@ button.chip[aria-pressed="true"]:hover { color: var(--activo-texto); }
 .row-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.86rem; color: var(--muted); }
 .body-text { white-space: pre-wrap; padding: 0.8rem; background: var(--field); border: 1px solid var(--line); border-radius: 4px; }
 
-/* Insignias: prioridad = bloque Manchester; estado = sello (grafito / azul discontinuo / azul lleno). */
+/* Insignias: prioridad = chip suave con borde de su tinta; estado = sello (grafito / índigo discontinuo / índigo lleno). */
 .badge { display: inline-block; font: 600 0.72rem/1.5 var(--mono); padding: 0.05rem 0.5rem; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.06em; border: 1.5px solid currentColor; }
 .prio-alta { background: var(--badge-alta-bg); color: var(--badge-alta-fg); border-color: var(--alta); }
 .prio-media { background: var(--badge-media-bg); color: var(--badge-media-fg); border-color: var(--media); }
@@ -386,3 +387,6 @@ button.tour-btn:hover { color: var(--destacado-texto); filter: brightness(1.08);
 
 /* El sello del detalle con aire propio: girado, no toca el texto de la solicitud. */
 .detail-stamp { margin: 0.9rem 0 1.4rem; padding-left: 0.3rem; }
+
+/* El contador dentro de la pestaña activa, invertido para que no se funda con ella. */
+.top nav a.active .nav-count:not(.late) { background: var(--activo-texto); color: var(--activo); }
