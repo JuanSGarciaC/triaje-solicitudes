@@ -49,7 +49,7 @@ export default function Inbox({ config, onChange }: { config: AppConfig; onChang
     try {
       const created = await api.createRequest(data);
       setLast(created); // la lista se recarga cuando el punto llega a su rama
-      if (created.classifier_failed !== !config.classifier.healthy) onChange(); // actualiza el aviso del modelo
+      onChange(); // contadores, aviso del modelo y avisos
       setForm({ subject: "", requester: form.requester, body: "" });
       setEx((ex + 1) % Math.max(1, config.examples.length));
     } catch (err) {

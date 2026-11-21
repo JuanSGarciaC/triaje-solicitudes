@@ -194,3 +194,31 @@ def test_tablero_de_la_mesa_y_csv(client):
     assert csv_text.headers["content-type"].startswith("text/csv")
     lines = csv_text.text.splitlines()
     assert lines[0].startswith("subject,body,expected_category,expected_priority") and any("Caído" in x for x in lines)
+
+
+def test_avisos_simulados_y_enviados_con_firma(client, monkeypatch):
+    import hashlib
+    import hmac
+
+    import httpx
+
+    from app.config import settings
+
+    r = client.post("/api/requests", json={"subject": "Instalar Excel", "body": "Necesito instalar Excel en mi equipo.", "requester": "Ana"}).json()
+    first = client.get("/api/notifications").json()[0]
+    assert first["request_id"] == r["id"] and first["delivery"] == "simulado" and "aprobada sola" in first["message"]
+
+    sent = {}
+
+    def fake_post(url, content, headers, timeout):
+        sent.update(url=url, body=content, headers=headers)
+        return httpx.Response(202)
+
+    monkeypatch.setattr(settings, "notify_url", "http://receptor.local/avisos")
+    monkeypatch.setattr(settings, "notify_secret", "s3creto")
+    monkeypatch.setattr(httpx, "post", fake_post)
+    client.post(f"/api/requests/{r['id']}/work", json={"action": "take", "actor": "Bea"})
+    last = client.get("/api/notifications").json()[0]
+    assert last["delivery"] == "enviado" and last["kind"] == "en_curso" and "la atiende Bea" in last["message"]
+    expected = "sha256=" + hmac.new(b"s3creto", sent["body"], hashlib.sha256).hexdigest()
+    assert sent["headers"]["X-Sello-Signature"] == expected == last["signature"]

@@ -85,8 +85,24 @@ class Request(Base):
     def overdue(self) -> bool:
         return not self.closed and utcnow() > self.due_at
 
+    notifications: Mapped[list["Notification"]] = relationship(cascade="all, delete-orphan", order_by="Notification.id")
+
     def log(self, kind: str, actor: str, **detail) -> None:
         self.events.append(RequestEvent(kind=kind, actor=actor, detail=detail))
+
+
+class Notification(Base):
+    """Aviso enviado (o simulado) cuando una solicitud cambia de estado."""
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    request_id: Mapped[int] = mapped_column(ForeignKey("requests.id", ondelete="CASCADE"), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    kind: Mapped[str] = mapped_column(String(20))
+    message: Mapped[str] = mapped_column(Text)
+    payload: Mapped[dict] = mapped_column(JSON)
+    signature: Mapped[str | None] = mapped_column(String(80), default=None)
+    delivery: Mapped[str] = mapped_column(String(12))  # simulado | enviado | fallido
 
 
 class RequestEvent(Base):

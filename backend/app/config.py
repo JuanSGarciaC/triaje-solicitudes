@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     preview_rate_per_minute: int = 6  # «Prueba tu solicitud»: por IP, también fuera de la demo
     demo_max_requests: int = 300
     client_ip_header: str = ""  # en Render: True-Client-IP
+    # Avisos al cambiar de estado: webhook saliente firmado con HMAC-SHA256 (cabecera X-Sello-Signature).
+    # Sin URL, o en la demo pública, se registran como «simulado» y no salen del servidor.
+    notify_url: str = ""
+    notify_secret: str = ""
     static_dir: str = "../frontend/dist"  # panel compilado; si no existe, la API no lo sirve
 
 

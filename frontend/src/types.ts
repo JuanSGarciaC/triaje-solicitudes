@@ -77,6 +77,17 @@ export interface Desk {
   categories: ReviewStat[];
 }
 
+export interface Notice {
+  id: number;
+  request_id: number;
+  at: string;
+  kind: string;
+  message: string;
+  payload: Record<string, unknown>;
+  signature: string | null;
+  delivery: "simulado" | "enviado" | "fallido";
+}
+
 export interface Metrics {
   total: number;
   by_status: Record<string, number>;

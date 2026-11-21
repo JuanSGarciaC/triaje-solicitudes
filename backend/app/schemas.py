@@ -74,6 +74,19 @@ class PreviewOut(BaseModel):
     rules_fallback: bool  # True si se usó el clasificador de reglas porque el LLM no está disponible
 
 
+class NotificationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    request_id: int
+    at: datetime
+    kind: str
+    message: str
+    payload: dict
+    signature: str | None
+    delivery: str
+
+
 class EventOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

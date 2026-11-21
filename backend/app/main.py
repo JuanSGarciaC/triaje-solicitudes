@@ -16,9 +16,10 @@ from .classifier import CATEGORIES, PRIORITIES, Classification, MockClassifier, 
 from .config import settings
 from .database import SessionLocal, get_db, migrate
 from .demo import ALLOWED, EXAMPLES, SEED, VISITOR, RateLimiter, client_ip, load_labeled
-from .models import IdempotencyKey, Request, RequestEvent, sla_hours, team_routes
+from .models import IdempotencyKey, Notification, Request, RequestEvent, sla_hours, team_routes
+from .notify import notify
 from .policy import policy_reasons
-from .schemas import ClassifierStatus, ConfigOut, DeskOut, EventOut, ReviewStat, TeamLoad, PreviewIn, PreviewOut, WorkIn, MetricsOut, RequestCreate, RequestOut, ReviewIn
+from .schemas import ClassifierStatus, ConfigOut, DeskOut, EventOut, NotificationOut, ReviewStat, TeamLoad, PreviewIn, PreviewOut, WorkIn, MetricsOut, RequestCreate, RequestOut, ReviewIn
 
 
 @asynccontextmanager
@@ -47,14 +48,26 @@ def apply(item: Request, result: Classification, version: str) -> None:
     item.log("decided", "sistema", status=item.status, reason=item.policy_reason, threshold=item.policy_threshold)
 
 
+def triage_message(item: Request) -> str:
+    if item.status == "auto_approved":
+        return f"N.º {item.id:04d} aprobada sola y enviada a {item.team}."
+    why = {"model_failed": "el modelo no respondió", "sensitive_priority": "prioridad alta", "low_confidence": "baja confianza"}
+    reasons = " y ".join(why.get(c, c) for c in (item.policy_reason or "").split(",") if c)
+    return f"N.º {item.id:04d} espera revisión de una persona ({reasons})."
+
+
 def store(
-    db: Session, subject: str, body: str, requester: str, key: str | None = None, result: Classification | None = None
+    db: Session, subject: str, body: str, requester: str, key: str | None = None, result: Classification | None = None,
+    announce: bool = True,
 ) -> Request:
     classifier = get_classifier()
     item = Request(subject=subject, body=body, requester=requester)
     item.log("received", requester)
     apply(item, result or classifier.classify(subject, body), classifier.version)
     db.add(item)
+    if announce:
+        db.flush()
+        notify(item, "triage", triage_message(item))
     if key:  # misma transacción: o quedan la solicitud y su clave, o ninguna
         db.flush()
         db.add(IdempotencyKey(key=key, request_id=item.id))
@@ -70,7 +83,7 @@ def seed_demo(db: Session) -> None:
         return
     # La primera simula que el modelo no respondió, para que la demo enseñe el aviso y «Reclasificar».
     stored = [
-        store(db, e["subject"], e["body"], "Laura Ríos (ejemplo)", result=None if i else fallback(e["subject"]))
+        store(db, e["subject"], e["body"], "Laura Ríos (ejemplo)", result=None if i else fallback(e["subject"]), announce=False)
         for i, e in enumerate(SEED)
     ]
     # Fechas escalonadas entre hace 5 h y hace ~48 h: la cola arranca con plazos vencidos (la urgente, la del
@@ -117,7 +130,7 @@ def seed_history(db: Session, now: datetime, people: tuple[str, str]) -> None:
     for week in range(5, 0, -1):
         for k in range(6):
             row = labeled[(week * 6 + k) % len(labeled)]
-            r = store(db, row["subject"], row["body"], "Laura Ríos (ejemplo)")
+            r = store(db, row["subject"], row["body"], "Laura Ríos (ejemplo)", announce=False)
             r.created_at = now - timedelta(weeks=week, hours=k * 19)
             for ev in r.events:
                 ev.at = r.created_at
@@ -212,6 +225,7 @@ def create_request(
     if excess > 0:
         oldest = select(Request.id).order_by(Request.id).limit(excess).scalar_subquery()
         db.execute(delete(RequestEvent).where(RequestEvent.request_id.in_(oldest)))
+        db.execute(delete(Notification).where(Notification.request_id.in_(oldest)))
         db.execute(delete(Request).where(Request.id.in_(oldest)))
         db.commit()
     return item
@@ -286,9 +300,16 @@ def review_request(request_id: int, payload: ReviewIn, db: Session = Depends(get
     item.status = "reviewed"
     corrected = (item.final_category, item.final_priority) != (item.pred_category, item.pred_priority)
     item.log("reviewed", item.reviewer, category=item.final_category, priority=item.final_priority, corrected=corrected)
+    change = "la corrigió" if corrected else "la confirmó"
+    notify(item, "reviewed", f"N.º {item.id:04d}: {item.reviewer} {change} (prioridad {item.final_priority}); pasa a {item.team}.")
     db.commit()
     db.refresh(item)
     return item
+
+
+@app.get("/api/notifications", response_model=list[NotificationOut])
+def notifications(limit: int = Query(default=30, ge=1, le=100), db: Session = Depends(get_db)):
+    return db.scalars(select(Notification).order_by(Notification.id.desc()).limit(limit)).all()
 
 
 @app.get("/api/requests/{request_id}/events", response_model=list[EventOut])
@@ -309,6 +330,7 @@ def reclassify_request(request_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Solo se reclasifican solicitudes pendientes de revisión.")
     classifier = get_classifier()
     apply(item, classifier.classify(item.subject, item.body), classifier.version)
+    notify(item, "reclassified", "Reclasificada. " + triage_message(item))
     db.commit()
     db.refresh(item)
     return item
@@ -333,6 +355,8 @@ def work_request(request_id: int, payload: WorkIn, db: Session = Depends(get_db)
     else:
         item.resolved_at = datetime.now(timezone.utc)
     item.log("work", actor, before=before, after=after, team=item.team)
+    text = f"la atiende {actor} ({item.team})" if after == "en_curso" else f"resuelta por {actor}"
+    notify(item, after, f"N.º {item.id:04d} {'en curso: ' + text if after == 'en_curso' else text}.")
     db.commit()
     db.refresh(item)
     return item

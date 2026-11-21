@@ -7,6 +7,7 @@ import Evaluation from "./pages/Evaluation";
 import Inbox from "./pages/Inbox";
 import Metrics from "./pages/Metrics";
 import Review from "./pages/Review";
+import Notices from "./Notices";
 import Tour, { TOUR_SEEN } from "./Tour";
 
 export default function App() {
@@ -54,13 +55,16 @@ export default function App() {
           </NavLink>
           <NavLink to="/metricas">Métricas</NavLink>
           <NavLink to="/evaluacion">Evaluación</NavLink>
-          {/* Página estática que sirve la API, fuera del router */}
-          <a href="/como-funciona">Cómo funciona</a>
         </nav>
         <button className="chip tour-btn" onClick={() => setTour(true)}>
           {localStorage.getItem(TOUR_SEEN) ? "Repetir recorrido" : "Ver en 60 s"}
         </button>
-        {config.data?.demo && <span className="chip demo">Demo pública</span>}
+        {config.data && <Notices refresh={config.data} demo={config.data.demo} />}
+        {config.data?.demo && (
+          <span className="chip demo" title="Demo pública: sin texto libre guardado y con límites por IP">
+            Demo
+          </span>
+        )}
       </header>
       <main className="main">
         {config.loading && !config.data && <p className="muted">Conectando con el servidor…</p>}

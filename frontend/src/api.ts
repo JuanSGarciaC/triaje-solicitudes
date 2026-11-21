@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AppConfig, Desk, EvalReport, Metrics, NewRequest, Preview, RequestEvent, RequestItem, ReviewPayload, Status } from "./types";
+import type { AppConfig, Desk, EvalReport, Metrics, NewRequest, Notice, Preview, RequestEvent, RequestItem, ReviewPayload, Status } from "./types";
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, { headers: { "Content-Type": "application/json" }, ...init });
@@ -15,6 +15,7 @@ export const api = {
   config: () => http<AppConfig>("/config"),
   metrics: () => http<Metrics>("/metrics"),
   desk: () => http<Desk>("/metrics/desk"),
+  notifications: () => http<Notice[]>("/notifications"),
   // shortcut: una sola página de 200 (el máximo de la API); paginar si la bandeja crece más.
   listRequests: (status?: Status) => http<RequestItem[]>(`/requests?limit=200${status ? `&status=${status}` : ""}`),
   evalReports: () => http<EvalReport[]>("/eval"),
