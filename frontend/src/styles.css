@@ -255,6 +255,9 @@ tbody th { color: var(--muted); }
 @media (max-width: 900px) {
   .top { gap: 1rem; padding: 0.7rem 1rem; flex-wrap: wrap; }
   .brand-tag { display: none; }
+  /* Navegación en una tira desplazable bajo la marca, no en cuatro filas. */
+  .top nav { order: 3; flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -1rem; padding: 0 1rem; }
+  .top { gap: 0.6rem 0.8rem; }
   .split, .split.inbox, .split.review, .two { grid-template-columns: 1fr; }
   .main { padding: 1rem; }
   .bars li { grid-template-columns: 110px 1fr 3ch; }
