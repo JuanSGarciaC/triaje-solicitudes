@@ -27,6 +27,7 @@ class Classification:
     summary: str
     confidence: float
     reasoning: str
+    failed: bool = False  # True si el modelo no respondió o respondió algo inválido
 
 
 class Classifier(Protocol):
@@ -37,7 +38,7 @@ class Classifier(Protocol):
 
 def fallback(subject: str) -> Classification:
     """Resultado seguro si el LLM falla: confianza 0, así que siempre pasa a revisión humana."""
-    return Classification("otro", "media", subject[:140], 0.0, "El clasificador falló; requiere revisión humana.")
+    return Classification("otro", "media", subject[:140], 0.0, "El clasificador falló; requiere revisión humana.", True)
 
 
 # ---------- Mock: reglas simples, solo para desarrollo y pruebas ----------
@@ -48,20 +49,31 @@ KEYWORDS = {
     "red_conectividad": ("wifi", "internet", "vpn", "conexión", "router", "lento"),
     "nuevo_servicio": ("nuevo servicio", "habilitar", "alta de", "nueva herramienta", "crear un"),
 }
-HIGH = ("urgente", "caído", "bloqueado todo", "no puedo trabajar", "producción", "todos")
+# Alta = bloquea el trabajo de varias personas (mismo criterio que el prompt del LLM).
+HIGH = ("urgente", "caído", "caída", "se cayó", "bloqueado todo", "no puedo trabajar", "sin poder trabajar", "producción", "todos")
 LOW = ("cuando puedan", "duda", "consulta", "sin prisa")
+# Incidentes de seguridad: siempre prioridad alta (y por tanto revisión humana), sea cual sea la categoría.
+# Mismo criterio que el prompt del LLM; no hay categoría propia de seguridad, así que se conserva la que toque.
+SECURITY = (
+    "ransomware", "malware", "virus", "troyano", "spyware", "phishing", "suplant", "sospechos", "hacke",
+    "cifraron", "archivos cifrados", "encriptad", "rescate", "robaron", "robada", "robado", "robo de",
+    "filtrad", "credenciales expuestas",
+)
 
 
 class MockClassifier:
-    version = "mock-keywords-v1"
+    version = "mock-keywords-v2"  # v2: incidentes de seguridad y caídas generales -> prioridad alta
 
     def classify(self, subject: str, body: str) -> Classification:
         text = f"{subject} {body}".lower()
         scores = {cat: sum(k in text for k in kws) for cat, kws in KEYWORDS.items()}
         best, hits = max(scores.items(), key=lambda kv: kv[1])
         category, conf = ("otro", 0.4) if hits == 0 else (best, 0.9 if hits >= 2 else 0.8)
-        priority = "alta" if any(w in text for w in HIGH) else "baja" if any(w in text for w in LOW) else "media"
-        return Classification(category, priority, subject[:140], conf, f"Palabras clave detectadas: {hits}.")
+        security = any(w in text for w in SECURITY)
+        high = security or any(w in text for w in HIGH)
+        priority = "alta" if high else "baja" if any(w in text for w in LOW) else "media"
+        reasoning = f"Palabras clave detectadas: {hits}." + (" Posible incidente de seguridad: prioridad alta." if security else "")
+        return Classification(category, priority, subject[:140], conf, reasoning)
 
 
 # ---------- LLM real ----------

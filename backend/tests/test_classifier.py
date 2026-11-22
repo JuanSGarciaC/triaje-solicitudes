@@ -74,3 +74,26 @@ def test_gemini_stops_when_quota_exhausted():
     assert c.quota_exhausted and calls["n"] == 1
     c.classify("c", "d")
     assert calls["n"] == 1
+
+
+@pytest.mark.parametrize("subject,body", [
+    ("Ransomware en equipo de gerencia", "La pantalla dice que cifraron los archivos y piden un rescate."),
+    ("Laptop robada", "Me robaron la laptop de la oficina del auto."),
+    ("Correo sospechoso", "Me llegó un correo de phishing pidiendo mi contraseña."),
+    ("Virus en el equipo", "El antivirus detectó malware en mi computador."),
+])
+def test_incidente_de_seguridad_siempre_va_a_una_persona(subject, body):
+    from app.policy import decide_status
+
+    c = MockClassifier().classify(subject, body)
+    assert c.priority == "alta" and "seguridad" in c.reasoning
+    assert decide_status(c) == "needs_review"
+
+
+def test_seguridad_no_dispara_en_texto_normal():
+    assert MockClassifier().classify("Instalar Excel", "Necesito instalar Excel para el cierre de mes.").priority == "media"
+
+
+def test_caida_que_deja_a_varios_sin_trabajar_es_alta():
+    c = MockClassifier().classify("Se cayó el wifi del piso 3", "No hay wifi en todo el piso, somos 30 personas sin poder trabajar.")
+    assert c.priority == "alta"

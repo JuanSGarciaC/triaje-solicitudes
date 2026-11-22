@@ -28,7 +28,7 @@ def test_eval_endpoint_serves_saved_reports(client):
     by_clf = {r["classifier"]: r for r in reports}
     gemini = by_clf["gemini:gemini-3.5-flash-lite"]
     assert (gemini["n"], gemini["category_ok"], gemini["priority_ok"]) == (10, 9, 6)
-    assert "mock-keywords-v1" in by_clf
+    assert "mock-keywords-v2" in by_clf
     for r in reports:  # la matriz debe cuadrar con el total de casos
         assert sum(sum(row.values()) for row in r["confusion"].values()) == r["n"]
 

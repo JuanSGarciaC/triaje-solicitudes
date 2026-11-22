@@ -13,20 +13,79 @@ export interface RequestItem {
   pred_confidence: number;
   pred_reasoning: string;
   classifier_version: string;
+  classifier_failed: boolean;
+  policy_reason: string | null; // "auto" o motivos separados por coma; null en filas anteriores
+  policy_threshold: number | null;
   final_category: string | null;
   final_priority: string | null;
   reviewer: string | null;
   review_note: string | null;
   reviewed_at: string | null;
+  due_at: string;
+  overdue: boolean;
+  work_state: "abierta" | "en_curso" | "resuelta";
+  team: string;
+  assignee: string | null;
+  resolved_at: string | null;
 }
 
 export interface AppConfig {
+  brand_name: string;
+  brand_tagline: string;
   confidence_threshold: number;
   categories: string[];
   priorities: string[];
   always_review_priorities: string[];
   demo: boolean;
+  classifier: { version: string; healthy: boolean; failed_pending: number; pending: number; overdue: number };
+  sla_hours: Record<string, number>;
+  teams: string[];
   examples: { subject: string; body: string }[];
+}
+
+export interface RequestEvent {
+  at: string;
+  kind: "received" | "classified" | "decided" | "reviewed" | "work";
+  actor: string;
+  detail: Record<string, string | number | boolean | null>;
+}
+
+export interface Preview {
+  category: string;
+  priority: string;
+  confidence: number;
+  reasons: string[];
+  status: Status;
+  threshold: number;
+  classifier: string;
+  rules_fallback: boolean;
+}
+
+export interface ReviewStat {
+  label: string;
+  reviewed: number;
+  corrected: number;
+}
+
+export interface Desk {
+  teams: { team: string; open: number; in_progress: number; overdue: number }[];
+  overdue: number;
+  avg_hours_to_review: number | null;
+  avg_hours_to_resolve: number | null;
+  resolved_on_time: number | null;
+  weeks: ReviewStat[];
+  categories: ReviewStat[];
+}
+
+export interface Notice {
+  id: number;
+  request_id: number;
+  at: string;
+  kind: string;
+  message: string;
+  payload: Record<string, unknown>;
+  signature: string | null;
+  delivery: "simulado" | "enviado" | "fallido";
 }
 
 export interface Metrics {

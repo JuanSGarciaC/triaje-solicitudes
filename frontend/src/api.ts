@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AppConfig, EvalReport, Metrics, NewRequest, RequestItem, ReviewPayload, Status } from "./types";
+import type { AppConfig, Desk, EvalReport, Metrics, NewRequest, Notice, Preview, RequestEvent, RequestItem, ReviewPayload, Status } from "./types";
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, { headers: { "Content-Type": "application/json" }, ...init });
@@ -14,10 +14,17 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   config: () => http<AppConfig>("/config"),
   metrics: () => http<Metrics>("/metrics"),
+  desk: () => http<Desk>("/metrics/desk"),
+  notifications: () => http<Notice[]>("/notifications"),
   // shortcut: una sola página de 200 (el máximo de la API); paginar si la bandeja crece más.
   listRequests: (status?: Status) => http<RequestItem[]>(`/requests?limit=200${status ? `&status=${status}` : ""}`),
   evalReports: () => http<EvalReport[]>("/eval"),
   createRequest: (data: NewRequest) => http<RequestItem>("/requests", { method: "POST", body: JSON.stringify(data) }),
+  preview: (body: string) => http<Preview>("/classify/preview", { method: "POST", body: JSON.stringify({ body }) }),
+  work: (id: number, action: "take" | "resolve", actor: string) =>
+    http<RequestItem>(`/requests/${id}/work`, { method: "POST", body: JSON.stringify({ action, actor }) }),
+  events: (id: number) => http<RequestEvent[]>(`/requests/${id}/events`),
+  reclassify: (id: number) => http<RequestItem>(`/requests/${id}/reclassify`, { method: "POST" }),
   review: (id: number, data: ReviewPayload) =>
     http<RequestItem>(`/requests/${id}/review`, { method: "POST", body: JSON.stringify(data) }),
 };

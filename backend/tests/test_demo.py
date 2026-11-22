@@ -57,7 +57,7 @@ def test_demo_seed_and_config(demo):
         main.seed_demo(db)
         main.seed_demo(db)  # no duplica si ya hay datos
     m = demo.get("/api/metrics").json()
-    assert m["total"] == 32 and m["reviewed_count"] >= 1 and m["by_status"].get("needs_review", 0) >= 1
+    assert m["total"] == 62 and m["reviewed_count"] >= 1 and m["by_status"].get("needs_review", 0) >= 1
     cfg = demo.get("/api/config").json()
     assert cfg["demo"] is True and len(cfg["examples"]) == 42
 

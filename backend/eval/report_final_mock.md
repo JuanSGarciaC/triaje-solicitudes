@@ -1,7 +1,7 @@
 # Reporte de evaluación
 
-- Fecha: 2026-11-11 10:25
-- Clasificador: `mock-keywords-v1`
+- Fecha: 2026-11-21 18:21
+- Clasificador: `mock-keywords-v2`
 - Umbral de confianza: 0.75
 - Casos evaluados: 10
 - Fallas de API (repite la corrida si hay alguna): 0/10
@@ -10,9 +10,9 @@
 ## Resultados
 
 - Exactitud de categoría: 6/10 (60%)
-- Exactitud de prioridad: 5/10 (50%)
-- Aprobadas automáticamente: 8/10 (80%)
-- Exactitud de categoría entre las aprobadas automáticamente: 6/8 (75%)
+- Exactitud de prioridad: 7/10 (70%)
+- Aprobadas automáticamente: 6/10 (60%)
+- Exactitud de categoría entre las aprobadas automáticamente: 4/6 (67%)
 
 ## Matriz de confusión (filas = esperada, columnas = predicha)
 
@@ -35,7 +35,5 @@
 ## Errores de prioridad
 
 - «Instalación de Python»: esperada `baja`, predicha `media` (0.80)
-- «Se cayó el wifi del piso 3»: esperada `alta`, predicha `media` (0.80)
 - «Quiero una herramienta de encuestas»: esperada `baja`, predicha `media` (0.40)
 - «Acceso a carpeta de RRHH»: esperada `baja`, predicha `media` (0.80)
-- «Laptop robada»: esperada `alta`, predicha `media` (0.80)

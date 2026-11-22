@@ -87,3 +87,16 @@ def test_evaluacion_compara_reglas_y_gemini(page: Page):
     expect(tabla).to_contain_text("Gemini")
     expect(tabla).to_contain_text("9/10")
     expect(page.locator(".matrix")).to_have_count(2)
+
+
+def test_prueba_tu_solicitud_sella_sin_guardar(page: Page):
+    page.goto(BASE)
+    page.wait_for_load_state("networkidle")
+    total = lambda: page.request.get(f"{BASE}/api/metrics").json()["total"]  # noqa: E731
+    recibidas = total()
+    page.get_by_label("Describe el problema").fill("Urgente: la VPN no conecta y tengo reunión con un cliente.")
+    page.get_by_role("button", name="Clasificar y sellar").click()
+    ticket = page.locator(".print-ticket")
+    expect(ticket).to_contain_text("Prioridad alta: siempre la revisa una persona")
+    expect(ticket.locator(".stamp")).to_have_text("Por revisar")
+    assert total() == recibidas  # no se guardó

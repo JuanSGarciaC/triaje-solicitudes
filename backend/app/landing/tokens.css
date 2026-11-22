@@ -1,0 +1,45 @@
+/* Paleta de Sello, «Kraft y tampón»: única fuente de color del panel y de /como-funciona (el panel la enlaza
+   en index.html). Escritorio de cartón kraft, tiques de papel kraft claro (de la misma familia que el fondo) y tintas de tampón desaturadas.
+   Nombres: «tinta» = el escritorio (fondo de la página); «papel» = los tiques y paneles.
+   Las tintas de prioridad van en franja, borde, texto y sello; los chips de prioridad en tono suave.
+   Contraste AA comprobado en todos los pares de texto. */
+
+:root {
+  --activo: #262019;  /* pestaña o chip activo sobre el escritorio */
+  --activo-texto: #efe5d1;
+  --tinta: #d4c3a3;
+  --barra: rgba(196, 177, 143, 0.95);
+  --tinta-texto: #2b2318;
+  --tinta-gris: #4c4031;
+  --tinta-linea: rgba(43, 35, 24, 0.2);
+  --tinta-suave: rgba(241, 232, 214, 0.35);
+  --tinta-campo: #f1e8d6;
+  --papel: #ebe0ca;
+  --papel-2: #e2d5bb;
+  --papel-claro: #f2e9d7;
+  --papel-texto: #262019;
+  --papel-gris: #584d3f;
+  --papel-tenue: #5f5446;
+  --papel-linea: rgba(38, 32, 25, 0.2);
+  --papel-suave: rgba(38, 32, 25, 0.06);
+  --alta: #7e2633;
+  --media: #725613;
+  --baja: #3e5d56;
+  --persona: #293b7a;
+  --grafito: #4e473f;
+  --sobre-persona: #ffffff;
+  --badge-alta-bg: #ecd3cf;   --badge-alta-fg: #7e2633;
+  --badge-media-bg: #eadbb6;  --badge-media-fg: #5f470f;
+  --badge-baja-bg: #d6ded8;   --badge-baja-fg: #30483f;
+  --acento: #262019;
+  --acento-texto: #f2e9d7;
+  --destacado: #262019;
+  --destacado-texto: #f2e9d7;
+  --contador: #262019;
+  --contador-texto: #f2e9d7;
+  --chip-demo: #4c4031;
+  --clf-bg: #e1dfe3;
+  --fallo-bg: #ecd6cd;
+  --sombra: 0 1px 0 rgba(255, 250, 240, 0.5) inset, 0 6px 16px rgba(70, 50, 20, 0.16);
+  color-scheme: light;
+}
